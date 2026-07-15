@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
-import { schema } from "../../db.js";
+import { schema } from "../../db/index.js";
 import { eq, desc, sql } from "drizzle-orm";
 
 export const walletRouter = router({

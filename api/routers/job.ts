@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../trpc.js";
-import { schema } from "../../db.js";
+import { schema } from "../../db/index.js";
 import { and, desc, eq } from "drizzle-orm";
 
 export const jobRouter = router({

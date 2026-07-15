@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure } from "../trpc.js";
-import { schema } from "../../db.js";
+import { schema } from "../../db/index.js";
 import { eq } from "drizzle-orm";
 
 export const marketRouter = router({

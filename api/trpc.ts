@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { createClient } from "@supabase/supabase-js";
-import { db, schema } from "../db.js";
+import { db, schema } from "../db/index.js";
 import { eq } from "drizzle-orm";
 
 const supabaseUrl = process.env.SUPABASE_URL!;

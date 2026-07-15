@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
-import { schema } from "../../db.js";
+import { schema } from "../../db/index.js";
 import { and, asc, desc, eq } from "drizzle-orm";
 
 export const chatRouter = router({
