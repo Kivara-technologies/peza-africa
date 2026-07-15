@@ -15,7 +15,7 @@ export const jobRouter = router({
         .orderBy(desc(schema.jobs.urgent), desc(schema.jobs.postedAt));
     }),
 
-  apply: protectedProcedure
+  applyToJob: protectedProcedure
     .input(z.object({ jobId: z.number(), coverLetter: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const [existing] = await ctx.db
