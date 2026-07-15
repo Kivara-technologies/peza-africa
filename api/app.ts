@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "./router";
-import { createContext } from "./trpc";
+import { appRouter } from "./router.js";
+import { createContext } from "./trpc.js";
 
 export const app = new Hono().basePath("/api");
 

@@ -1,14 +1,14 @@
-import { router } from "./trpc";
-import { authRouter } from "./routers/auth";
-import { categoryRouter } from "./routers/category";
-import { productRouter } from "./routers/product";
-import { orderRouter } from "./routers/order";
-import { walletRouter } from "./routers/wallet";
-import { supplierRouter } from "./routers/supplier";
-import { marketRouter } from "./routers/market";
-import { jobRouter } from "./routers/job";
-import { chatRouter } from "./routers/chat";
-import { notificationRouter } from "./routers/notification";
+import { router } from "./trpc.js";
+import { authRouter } from "./routers/auth.js";
+import { categoryRouter } from "./routers/category.js";
+import { productRouter } from "./routers/product.js";
+import { orderRouter } from "./routers/order.js";
+import { walletRouter } from "./routers/wallet.js";
+import { supplierRouter } from "./routers/supplier.js";
+import { marketRouter } from "./routers/market.js";
+import { jobRouter } from "./routers/job.js";
+import { chatRouter } from "./routers/chat.js";
+import { notificationRouter } from "./routers/notification.js";
 
 export const appRouter = router({
   auth: authRouter,

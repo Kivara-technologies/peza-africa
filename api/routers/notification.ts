@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../trpc";
-import { schema } from "../../db";
+import { router, publicProcedure, protectedProcedure } from "../trpc.js";
+import { schema } from "../../db.js";
 import { and, desc, eq } from "drizzle-orm";
 
 export const notificationRouter = router({

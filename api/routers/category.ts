@@ -1,5 +1,5 @@
-import { router, publicProcedure } from "../trpc";
-import { schema } from "../../db";
+import { router, publicProcedure } from "../trpc.js";
+import { schema } from "../../db.js";
 import { asc } from "drizzle-orm";
 
 export const categoryRouter = router({
