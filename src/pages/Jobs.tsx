@@ -17,7 +17,7 @@ export default function Jobs() {
 
   const { data: jobs } = trpc.job.list.useQuery({ category: activeCat === "All" ? undefined : activeCat });
 
-  const applyMutation = trpc.job.apply.useMutation({
+  const applyMutation = trpc.job.applyToJob.useMutation({
     onSuccess: () => {
       setApplied(true);
       toast.success("Application submitted!");
