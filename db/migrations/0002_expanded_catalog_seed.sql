@@ -31,10 +31,10 @@ values
   ('32-inch LED TV', 'HD-ready smart LED television with built-in apps', 1850, 2200, 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600', 'electronics', 'Kalingalinga Electronics', '260570230160', 4.3, 29, 6, false, false, 15),
 
   -- Fashion
-  ("Men's Ankara Print Shirt", 'Premium African print casual shirt', 180, null, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.7, 54, null, true, false, 60),
+  ('Men''s Ankara Print Shirt', 'Premium African print casual shirt', 180, null, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.7, 54, null, true, false, 60),
   ('Ladies Handbag', 'Genuine leather tote bag', 320, 400, 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.5, 39, null, false, true, 25),
   ('Chitenge Fabric (6 yards)', 'Vibrant wax-print chitenge, ideal for outfits or home decor', 150, 190, 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600', 'fashion', 'Kabwata Fabrics', '260570230160', 4.6, 47, null, true, false, 90),
-  ("Men's Leather Sandals", 'Handmade genuine leather sandals', 220, null, 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.2, 22, null, false, false, 40),
+  ('Men''s Leather Sandals', 'Handmade genuine leather sandals', 220, null, 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.2, 22, null, false, false, 40),
 
   -- Home & Living
   ('Non-Stick Cookware Set (10pc)', 'Complete kitchen cookware set', 650, 800, 'https://images.unsplash.com/photo-1584990347449-a5d9f800a783?w=600', 'home', 'HomeStyle', '260570230160', 4.8, 92, 6, true, true, 30),
