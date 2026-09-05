@@ -35,7 +35,7 @@ export default function Chat() {
 
   if (activeChat && activeChatData) {
     return (
-      <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-88px)]">
+      <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-140px)]">
         {/* Chat Header */}
         <div className="bg-peza-brown px-4 py-3 flex items-center gap-3 rounded-t-xl">
           <button onClick={() => setActiveChat(null)} className="text-white">

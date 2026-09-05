@@ -37,26 +37,6 @@ export default function Header() {
             </span>
           </div>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-1 flex-shrink-0">
-            {[
-              { label: "Shop", path: "/shop" },
-              { label: "Jobs", path: "/jobs" },
-              { label: "Suppliers", path: "/suppliers", lgOnly: true },
-              { label: "Market Prices", path: "/market-prices", lgOnly: true },
-              { label: "Orders", path: "/orders" },
-              { label: "Chat", path: "/chat", lgOnly: true },
-            ].map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap ${item.lgOnly ? "hidden lg:block" : ""}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
           {/* Search Bar */}
           <div className="flex-1 max-w-xl">
             {searchOpen ? (
