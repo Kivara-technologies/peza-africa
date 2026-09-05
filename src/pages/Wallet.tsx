@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export default function Wallet() {
   const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
-  const [provider, setProvider] = useState<"M-Pesa" | "Airtel" | "MTN">("M-Pesa");
+  const [provider, setProvider] = useState<"Airtel Money" | "MTN MoMo" | "Zamtel Kwacha">("Airtel Money");
 
   const { data: balanceData } = trpc.wallet.balance.useQuery();
   const { data: transactions } = trpc.wallet.transactions.useQuery();
@@ -14,12 +14,13 @@ export default function Wallet() {
 
   const topUp = trpc.wallet.topUp.useMutation({
     onSuccess: () => {
-      toast.success(`K${Number(topUpAmount).toLocaleString()} added via ${provider}!`);
+      toast.success(`Approve the ${provider} prompt on your phone to complete the top-up.`);
       setShowTopUp(false);
       setTopUpAmount("");
       utils.wallet.balance.invalidate();
       utils.wallet.transactions.invalidate();
     },
+    onError: (err) => toast.error(err.message || "Couldn't start top-up"),
   });
 
   const balance = Number(balanceData?.balance || 0);
@@ -64,7 +65,7 @@ export default function Wallet() {
 
           {/* Provider Selection */}
           <div className="flex gap-2 mb-4">
-            {(["M-Pesa", "Airtel", "MTN"] as const).map((p) => (
+            {(["Airtel Money", "MTN MoMo", "Zamtel Kwacha"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setProvider(p)}
@@ -133,7 +134,16 @@ export default function Wallet() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-peza-brown truncate">{t.description}</p>
-                <p className="text-xs text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</p>
+                  {t.status !== "completed" && (
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${t.status === "pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-500"}`}
+                    >
+                      {t.status.toUpperCase()}
+                    </span>
+                  )}
+                </div>
               </div>
               <span className={`text-sm font-bold ${Number(t.amount) > 0 ? "text-peza-green" : "text-peza-red"}`}>
                 {Number(t.amount) > 0 ? "+" : ""}{fmtK(Math.abs(Number(t.amount)))}

@@ -27,7 +27,7 @@ export default function Chat() {
   }, [messages]);
 
   const handleSend = () => {
-    if (!newMsg.trim() || !activeChat) return;
+    if (!newMsg.trim() || !activeChat || sendMsg.isPending) return;
     sendMsg.mutate({ chatId: activeChat, text: newMsg.trim() });
   };
 

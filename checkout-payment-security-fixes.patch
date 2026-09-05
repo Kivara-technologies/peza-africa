@@ -1,0 +1,825 @@
+From 440562d1f1e970b949029127a032f6236903464f Mon Sep 17 00:00:00 2001
+From: Cable <cable@kivara.tech>
+Date: Sat, 5 Sep 2026 23:08:01 +0000
+Subject: [PATCH] Fix critical checkout/wallet security issues: server-side
+ pricing, stock control, transactional checkout, real payment gating, delivery
+ address
+
+---
+ db/migrations/0002_expanded_catalog_seed.sql  |  16 +-
+ db/migrations/0004_checkout_payment_fixes.sql |  34 ++++
+ db/schema.ts                                  |  19 +-
+ docs/solution-architecture.md                 |  49 +++++
+ server/app.ts                                 |   3 +
+ server/routers/order.ts                       | 172 +++++++++++++-----
+ server/routers/paymentWebhook.ts              |  70 +++++++
+ server/routers/wallet.ts                      |  24 ++-
+ src/pages/Cart.tsx                            |  71 ++++++--
+ src/pages/Home.tsx                            |   2 +-
+ src/pages/Orders.tsx                          |   3 +-
+ src/pages/ProductDetail.tsx                   |   6 +-
+ src/pages/Wallet.tsx                          |  18 +-
+ 13 files changed, 394 insertions(+), 93 deletions(-)
+ create mode 100644 db/migrations/0004_checkout_payment_fixes.sql
+ create mode 100644 server/routers/paymentWebhook.ts
+
+diff --git a/db/migrations/0002_expanded_catalog_seed.sql b/db/migrations/0002_expanded_catalog_seed.sql
+index 772ae5b..f3702cc 100644
+--- a/db/migrations/0002_expanded_catalog_seed.sql
++++ b/db/migrations/0002_expanded_catalog_seed.sql
+@@ -6,7 +6,9 @@
+ -- page. Vendor names are illustrative placeholders, not real companies.
+ -- Swap each row's vendor/image/whatsapp_number for a real supplier's own
+ -- assets only after they've agreed to be listed (see supplier-outreach-kit.md).
+--- Safe to re-run: guarded with "on conflict do nothing" where possible.
++-- Safe to re-run: categories use "on conflict do nothing"; products use a
++-- "where not exists" guard keyed on (name, vendor) since there's no unique
++-- constraint on products to hang an ON CONFLICT off of.
+ 
+ insert into categories (name, slug, image) values
+   ('Phones & Electronics', 'electronics', null),
+@@ -21,7 +23,8 @@ on conflict (slug) do nothing;
+ 
+ insert into products
+   (name, description, price, compare_price, image, category_slug, vendor, whatsapp_number, rating, review_count, layby_months, featured, is_deal, stock)
+-values
++select v.name, v.description, v.price, v.compare_price, v.image, v.category_slug, v.vendor, v.whatsapp_number, v.rating, v.review_count, v.layby_months, v.featured, v.is_deal, v.stock
++from (values
+   -- Phones & Electronics (priced against actual Sep 2026 Lusaka street listings)
+   ('Samsung Galaxy A06 (64GB)', 'Entry-level Android, 5000mAh battery, dual SIM. Popular first-smartphone pick in Lusaka.', 1650, 1950, 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600', 'electronics', 'Lusaka Mobile Traders', '260570230160', 4.4, 61, 3, true, true, 35),
+   ('Samsung Galaxy A06 (128GB)', 'Bigger storage variant of the A06, MediaTek Helio G85, 50MP main camera.', 2600, 2900, 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600', 'electronics', 'Lusaka Mobile Traders', '260570230160', 4.5, 44, 6, true, false, 25),
+@@ -31,10 +34,10 @@ values
+   ('32-inch LED TV', 'HD-ready smart LED television with built-in apps', 1850, 2200, 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600', 'electronics', 'Kalingalinga Electronics', '260570230160', 4.3, 29, 6, false, false, 15),
+ 
+   -- Fashion
+-  ("Men's Ankara Print Shirt", 'Premium African print casual shirt', 180, null, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.7, 54, null, true, false, 60),
++  ('Men''s Ankara Print Shirt', 'Premium African print casual shirt', 180, null, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.7, 54, null, true, false, 60),
+   ('Ladies Handbag', 'Genuine leather tote bag', 320, 400, 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.5, 39, null, false, true, 25),
+   ('Chitenge Fabric (6 yards)', 'Vibrant wax-print chitenge, ideal for outfits or home decor', 150, 190, 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600', 'fashion', 'Kabwata Fabrics', '260570230160', 4.6, 47, null, true, false, 90),
+-  ("Men's Leather Sandals", 'Handmade genuine leather sandals', 220, null, 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.2, 22, null, false, false, 40),
++  ('Men''s Leather Sandals', 'Handmade genuine leather sandals', 220, null, 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600', 'fashion', 'Lusaka Threads', '260570230160', 4.2, 22, null, false, false, 40),
+ 
+   -- Home & Living
+   ('Non-Stick Cookware Set (10pc)', 'Complete kitchen cookware set', 650, 800, 'https://images.unsplash.com/photo-1584990347449-a5d9f800a783?w=600', 'home', 'HomeStyle', '260570230160', 4.8, 92, 6, true, true, 30),
+@@ -66,4 +69,7 @@ values
+   -- Baby & Kids
+   ('Baby Diapers (Size 3, Pack of 50)', 'Soft, absorbent disposable diapers', 145, 170, 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=600', 'baby-kids', 'Little Ones Zambia', '260570230160', 4.6, 52, null, true, true, 65),
+   ('Baby Stroller', 'Lightweight foldable stroller with sun canopy', 950, 1150, 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600', 'baby-kids', 'Little Ones Zambia', '260570230160', 4.4, 17, 6, false, false, 12)
+-;
++) as v(name, description, price, compare_price, image, category_slug, vendor, whatsapp_number, rating, review_count, layby_months, featured, is_deal, stock)
++where not exists (
++  select 1 from products p where p.name = v.name and p.vendor = v.vendor
++);
+diff --git a/db/migrations/0004_checkout_payment_fixes.sql b/db/migrations/0004_checkout_payment_fixes.sql
+new file mode 100644
+index 0000000..1f24af1
+--- /dev/null
++++ b/db/migrations/0004_checkout_payment_fixes.sql
+@@ -0,0 +1,34 @@
++-- Fixes critical pre-launch checkout/wallet issues:
++--   * orders: delivery address/phone (previously never collected), a
++--     paymentReference column for future provider-webhook correlation.
++--   * order_items.product_id: real foreign key (was a bare integer).
++--   * wallet_transactions: a status column so a top-up only counts toward
++--     the balance once a provider webhook confirms it — this is what makes
++--     wallet.topUp stop being an instant free-money mint.
++-- Existing rows default to status='completed' (delivery fields default to
++-- '') so nothing already in the DB breaks; new checkouts get real values
++-- going forward.
++
++alter table orders
++  add column if not exists payment_reference text,
++  add column if not exists delivery_address text not null default '',
++  add column if not exists delivery_phone text not null default '',
++  add column if not exists delivery_lat numeric,
++  add column if not exists delivery_lng numeric;
++
++alter table wallet_transactions
++  add column if not exists status text not null default 'completed',
++  add column if not exists provider_reference text;
++
++-- order_items.product_id previously had no FK at all. Add it now that
++-- order.create always writes real product ids (server-looked-up, not
++-- client-supplied).
++alter table order_items
++  add constraint order_items_product_id_fkey
++  foreign key (product_id) references products(id)
++  not valid; -- validate separately if there's existing bad data to clean up first
++
++-- Uncomment once you've confirmed no orphaned product_id values exist:
++-- alter table order_items validate constraint order_items_product_id_fkey;
++
++create index if not exists wallet_transactions_status_idx on wallet_transactions (status);
+diff --git a/db/schema.ts b/db/schema.ts
+index f966e5b..65ebebc 100644
+--- a/db/schema.ts
++++ b/db/schema.ts
+@@ -66,15 +66,20 @@ export const orders = pgTable("orders", {
+   shipping: numeric("shipping").notNull(),
+   discount: numeric("discount").notNull().default("0"),
+   total: numeric("total").notNull(),
+-  paymentMethod: text("payment_method").notNull(),
+-  status: text("status").notNull().default("pending"), // pending|processing|shipped|delivered|cancelled
++  paymentMethod: text("payment_method").notNull(), // AIRTEL | MTN | ZAMTEL | WALLET
++  paymentReference: text("payment_reference"), // provider transaction ref, set once a webhook confirms payment
++  deliveryAddress: text("delivery_address").notNull().default(""),
++  deliveryPhone: text("delivery_phone").notNull().default(""),
++  deliveryLat: numeric("delivery_lat"),
++  deliveryLng: numeric("delivery_lng"),
++  status: text("status").notNull().default("pending"), // pending|paid|processing|shipped|delivered|cancelled
+   createdAt: timestamp("created_at").notNull().defaultNow(),
+ });
+ 
+ export const orderItems = pgTable("order_items", {
+   id: serial("id").primaryKey(),
+   orderId: integer("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+-  productId: integer("product_id").notNull(),
++  productId: integer("product_id").notNull().references(() => products.id),
+   productName: text("product_name").notNull(),
+   productImage: text("product_image"),
+   price: numeric("price").notNull(),
+@@ -83,12 +88,18 @@ export const orderItems = pgTable("order_items", {
+ });
+ 
+ // ── Wallet ───────────────────────────────────────────────────────────
++// status gates whether a transaction counts toward the balance: a top-up
++// starts "pending" and only becomes "completed" once the mobile money
++// provider's webhook confirms the charge actually happened. Never flip this
++// to "completed" from a user-facing mutation.
+ export const walletTransactions = pgTable("wallet_transactions", {
+   id: serial("id").primaryKey(),
+   userId: uuid("user_id").notNull().references(() => profiles.id),
+   amount: numeric("amount").notNull(), // positive = credit, negative = debit
+   type: text("type").notNull(), // "topup" | "payment" | "refund"
+-  provider: text("provider"), // M-Pesa | Airtel | MTN
++  status: text("status").notNull().default("completed"), // "pending" | "completed" | "failed"
++  provider: text("provider"), // Airtel Money | MTN MoMo | Zamtel Kwacha
++  providerReference: text("provider_reference"), // provider's transaction id, for webhook reconciliation
+   description: text("description"),
+   createdAt: timestamp("created_at").notNull().defaultNow(),
+ });
+diff --git a/docs/solution-architecture.md b/docs/solution-architecture.md
+index 6051b74..66ceaf9 100644
+--- a/docs/solution-architecture.md
++++ b/docs/solution-architecture.md
+@@ -119,3 +119,52 @@ against:
+ 6. **Moderation.** Anyone who flips on seller/employer mode can post
+    immediately — no admin review step. Fine for an MVP/demo; worth adding a
+    `pending`/`approved` status on new listings before this goes fully public.
++
++---
++
++## 4. Critical checkout/wallet/payment fixes (pre-launch blockers)
++
++A follow-up review surfaced eight issues that made checkout and the wallet
++actively exploitable — not just incomplete. All were verified against the
++code and fixed:
++
++| # | Issue | Fix |
++|---|---|---|
++| 1 | `wallet.topUp` credited the balance instantly with no provider contact — anyone signed in could mint unlimited Kwacha | Top-ups now insert a `pending` transaction only; `wallet.balance` sums **only `completed`** transactions. A new `server/routers/paymentWebhook.ts` is the only code path allowed to mark one `completed`, gated behind a per-provider secret that must be configured in the environment (see file for what's left to wire up with real Airtel/MTN/Zamtel credentials) |
++| 2 | `order.create` took `price`/`subtotal`/`total` straight from the client | Client now sends only `{productId, quantity}` per line item; the server looks up every price from `products` and computes subtotal/shipping/total itself |
++| 3 | Every "payment method" behaved like free checkout — no STK push, no webhook, no way to become "paid" | Mobile-money orders now stay `status: "pending"` until a real webhook confirms them (same webhook file as #1, generalized for order payments is the next step — see follow-ups below); only wallet orders can go straight to `"paid"`, because that's an internal ledger movement of funds already in the platform wallet |
++| 4 | Wallet debit had no balance floor — could go negative | `order.create` now checks completed balance ≥ order total before allowing a WALLET checkout, inside the same transaction |
++| 5 | No stock check or decrement — infinite overselling | Checkout now locks the relevant product rows (`for("update")`), rejects if `stock < quantity`, and decrements stock as part of the same transaction |
++| 6 | Order, order items, wallet debit, and notification were 4 separate inserts — a crash mid-checkout could leave inconsistent state | The entire `order.create` mutation is now one `db.transaction(...)` — all inserts commit together or none do |
++| 7 | "M-Pesa" offered as a payment option — that's Kenyan/Tanzanian, not available in Zambia | Replaced everywhere (wallet, checkout, product detail, schema comments) with **Airtel Money / MTN MoMo / Zamtel Kwacha** |
++| 8 | No delivery address ever collected | `Cart.tsx` now collects address + phone before checkout; `orders` table has `deliveryAddress`, `deliveryPhone`, `deliveryLat`, `deliveryLng` |
++
++Schema changes are in `db/migrations/0004_checkout_payment_fixes.sql`
++(additive/nullable-or-defaulted, safe against existing rows).
++
++### Lower-severity items also fixed
++- `orderItems.productId` now has a real foreign key to `products.id`
++  (migration 0004; added `not valid` so it doesn't fail if any pre-existing
++  rows are orphaned — validate it separately once you've checked for that).
++- The catalog seed file (`0002_expanded_catalog_seed.sql`) had two rows using
++  double-quoted strings, which Postgres parses as identifiers, not string
++  literals — that would have broken the whole insert. Fixed to proper
++  `''`-escaped literals. The products insert is now also idempotent (a
++  `where not exists` guard keyed on name+vendor), matching how the
++  categories insert already worked.
++
++### Still open — flagged, not built this round
++- **Chilimba calculator has no backend.** It's UI-only; no table tracks
++  actual installment schedules or payments against a real order. Worth its
++  own schema (`chilimba_plans`, `chilimba_payments`) and router before it's
++  presented as a real feature to buyers.
++- **No escrow-PIN mechanism exists**, despite being a stated feature
++  somewhere in the product vision. This needs a design decision (what
++  triggers escrow, who holds the PIN, how release works) before it's worth
++  building — flagging rather than guessing at that design.
++- **Mobile money order payments** still just sit at `pending` forever right
++  now, since finishing that requires real Airtel/MTN/Zamtel merchant
++  credentials to actually initiate an STK push and receive the matching
++  webhook. The receiving side (`paymentWebhook.ts`) is scaffolded for wallet
++  top-ups; extending it to confirm order payments too is a small follow-up
++  once those credentials exist.
+diff --git a/server/app.ts b/server/app.ts
+index 792d4b5..7dec1bd 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -3,11 +3,14 @@ import { cors } from "hono/cors";
+ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+ import { appRouter } from "./router.js";
+ import { createContext } from "./trpc.js";
++import { paymentWebhookRoutes } from "./routers/paymentWebhook.js";
+ 
+ export const app = new Hono().basePath("/api");
+ 
+ app.use("/*", cors());
+ 
++app.route("/webhooks", paymentWebhookRoutes);
++
+ app.all("/trpc/*", (c) => {
+   return fetchRequestHandler({
+     endpoint: "/api/trpc",
+diff --git a/server/routers/order.ts b/server/routers/order.ts
+index 31b6f97..27aeca5 100644
+--- a/server/routers/order.ts
++++ b/server/routers/order.ts
+@@ -1,15 +1,12 @@
+ import { z } from "zod";
++import { TRPCError } from "@trpc/server";
+ import { router, protectedProcedure } from "../trpc.js";
+ import { schema } from "../../db/index.js";
+-import { eq, desc } from "drizzle-orm";
++import { eq, desc, and, sql, inArray } from "drizzle-orm";
+ 
+ const orderItemInput = z.object({
+   productId: z.number(),
+-  productName: z.string(),
+-  productImage: z.string().optional().nullable(),
+-  price: z.string(),
+-  quantity: z.number(),
+-  total: z.string(),
++  quantity: z.number().int().positive(),
+ });
+ 
+ export const orderRouter = router({
+@@ -24,59 +21,134 @@ export const orderRouter = router({
+   create: protectedProcedure
+     .input(
+       z.object({
+-        orderNumber: z.string(),
+-        subtotal: z.string(),
+-        shipping: z.string(),
+-        discount: z.string().default("0"),
+-        total: z.string(),
+-        paymentMethod: z.string(),
++        paymentMethod: z.enum(["AIRTEL", "MTN", "ZAMTEL", "WALLET"]),
++        deliveryAddress: z.string().min(5, "Enter a delivery address"),
++        deliveryPhone: z.string().min(6, "Enter a contact phone number"),
++        deliveryLat: z.number().optional(),
++        deliveryLng: z.number().optional(),
+         items: z.array(orderItemInput).min(1),
+       }),
+     )
+     .mutation(async ({ ctx, input }) => {
+-      const [order] = await ctx.db
+-        .insert(schema.orders)
+-        .values({
+-          userId: ctx.user.id,
+-          orderNumber: input.orderNumber,
+-          subtotal: input.subtotal,
+-          shipping: input.shipping,
+-          discount: input.discount,
+-          total: input.total,
+-          paymentMethod: input.paymentMethod,
+-          status: "pending",
+-        })
+-        .returning();
++      // Everything below runs in one transaction: if anything fails partway
++      // (bad stock, insufficient wallet balance, a crash), nothing commits —
++      // no order-with-no-items, no debited-wallet-with-no-order.
++      return ctx.db.transaction(async (tx) => {
++        const productIds = input.items.map((i) => i.productId);
++
++        // Lock the rows we're about to sell against concurrent checkouts on
++        // the same stock.
++        const products = await tx
++          .select()
++          .from(schema.products)
++          .where(inArray(schema.products.id, productIds))
++          .for("update");
++
++        const productById = new Map(products.map((p) => [p.id, p]));
++
++        for (const item of input.items) {
++          const product = productById.get(item.productId);
++          if (!product) {
++            throw new TRPCError({ code: "NOT_FOUND", message: `Product ${item.productId} not found` });
++          }
++          if (product.stock < item.quantity) {
++            throw new TRPCError({
++              code: "BAD_REQUEST",
++              message: `Only ${product.stock} left of "${product.name}" — reduce the quantity`,
++            });
++          }
++        }
++
++        // Prices come from the DB, never from the client.
++        const lineItems = input.items.map((item) => {
++          const product = productById.get(item.productId)!;
++          const price = Number(product.price);
++          return {
++            productId: product.id,
++            productName: product.name,
++            productImage: product.image,
++            price: product.price,
++            quantity: item.quantity,
++            total: (price * item.quantity).toFixed(2),
++          };
++        });
+ 
+-      await ctx.db.insert(schema.orderItems).values(
+-        input.items.map((item) => ({
+-          orderId: order.id,
+-          productId: item.productId,
+-          productName: item.productName,
+-          productImage: item.productImage ?? null,
+-          price: item.price,
+-          quantity: item.quantity,
+-          total: item.total,
+-        })),
+-      );
++        const subtotal = lineItems.reduce((sum, li) => sum + Number(li.total), 0);
++        const shipping = subtotal > 0 ? 150 : 0;
++        const total = subtotal + shipping;
+ 
+-      // If paying from wallet, debit the balance immediately.
+-      if (input.paymentMethod.toUpperCase() === "WALLET") {
+-        await ctx.db.insert(schema.walletTransactions).values({
++        // Wallet payments must be covered by an actual completed balance —
++        // no floor-less negative balances.
++        if (input.paymentMethod === "WALLET") {
++          const [balanceRow] = await tx
++            .select({ balance: sql<string>`coalesce(sum(${schema.walletTransactions.amount}), 0)` })
++            .from(schema.walletTransactions)
++            .where(
++              and(eq(schema.walletTransactions.userId, ctx.user.id), eq(schema.walletTransactions.status, "completed")),
++            );
++          const balance = Number(balanceRow?.balance ?? 0);
++          if (balance < total) {
++            throw new TRPCError({
++              code: "BAD_REQUEST",
++              message: `Insufficient wallet balance (K${balance.toLocaleString()} available, K${total.toLocaleString()} required)`,
++            });
++          }
++        }
++
++        const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
++        const [order] = await tx
++          .insert(schema.orders)
++          .values({
++            userId: ctx.user.id,
++            orderNumber,
++            subtotal: subtotal.toFixed(2),
++            shipping: shipping.toFixed(2),
++            discount: "0",
++            total: total.toFixed(2),
++            paymentMethod: input.paymentMethod,
++            deliveryAddress: input.deliveryAddress,
++            deliveryPhone: input.deliveryPhone,
++            deliveryLat: input.deliveryLat?.toString(),
++            deliveryLng: input.deliveryLng?.toString(),
++            // Wallet debits happen immediately below, so that order is paid
++            // right away. Mobile money orders stay "pending" until a
++            // provider webhook confirms the charge (not yet wired to a live
++            // provider — see server/routers/paymentWebhook.ts).
++            status: input.paymentMethod === "WALLET" ? "paid" : "pending",
++          })
++          .returning();
++
++        await tx.insert(schema.orderItems).values(lineItems.map((li) => ({ orderId: order.id, ...li })));
++
++        // Decrement stock for what was actually sold.
++        for (const item of input.items) {
++          await tx
++            .update(schema.products)
++            .set({ stock: sql`${schema.products.stock} - ${item.quantity}` })
++            .where(eq(schema.products.id, item.productId));
++        }
++
++        if (input.paymentMethod === "WALLET") {
++          await tx.insert(schema.walletTransactions).values({
++            userId: ctx.user.id,
++            amount: `-${total.toFixed(2)}`,
++            type: "payment",
++            status: "completed", // debiting the platform wallet is immediate — the funds are already in it
++            description: `Order ${orderNumber}`,
++          });
++        }
++
++        await tx.insert(schema.notifications).values({
+           userId: ctx.user.id,
+-          amount: `-${input.total}`,
+-          type: "payment",
+-          description: `Order ${input.orderNumber}`,
++          type: "order",
++          title: "Order placed",
++          message:
++            input.paymentMethod === "WALLET"
++              ? `Your order ${orderNumber} has been paid from your wallet.`
++              : `Your order ${orderNumber} is pending ${input.paymentMethod} payment confirmation.`,
+         });
+-      }
+ 
+-      await ctx.db.insert(schema.notifications).values({
+-        userId: ctx.user.id,
+-        type: "order",
+-        title: "Order placed",
+-        message: `Your order ${input.orderNumber} has been received.`,
++        return order;
+       });
+-
+-      return order;
+     }),
+ });
+diff --git a/server/routers/paymentWebhook.ts b/server/routers/paymentWebhook.ts
+new file mode 100644
+index 0000000..55ed39f
+--- /dev/null
++++ b/server/routers/paymentWebhook.ts
+@@ -0,0 +1,70 @@
++import { Hono } from "hono";
++import { and, eq } from "drizzle-orm";
++import { db, schema } from "../../db/index.js";
++
++// Receives payment confirmations from Airtel Money / MTN MoMo / Zamtel
++// Kwacha and is the ONLY code path allowed to move a wallet top-up from
++// "pending" to "completed". `wallet.topUp` (server/routers/wallet.ts)
++// deliberately never does this itself.
++//
++// NOT YET LIVE: each provider has its own signature scheme, payload shape,
++// and sandbox/production URLs, none of which are wired up here because
++// that requires real merchant credentials from Airtel/MTN/Zamtel. What's
++// here is the safe skeleton: it verifies a shared secret before trusting
++// anything, and refuses every request if that secret isn't configured, so
++// this endpoint can't become a second free-money hole while it's unfinished.
++//
++// To go live for a given provider:
++//   1. Get merchant/API credentials + webhook signing secret from them.
++//   2. Set e.g. AIRTEL_WEBHOOK_SECRET in the environment.
++//   3. Replace the placeholder signature check below with that provider's
++//      actual verification (HMAC, JWT, or whatever they specify).
++//   4. Point the provider's webhook URL at /api/webhooks/mobile-money.
++
++export const paymentWebhookRoutes = new Hono();
++
++const PROVIDER_SECRET_ENV: Record<string, string> = {
++  "Airtel Money": "AIRTEL_WEBHOOK_SECRET",
++  "MTN MoMo": "MTN_WEBHOOK_SECRET",
++  "Zamtel Kwacha": "ZAMTEL_WEBHOOK_SECRET",
++};
++
++paymentWebhookRoutes.post("/mobile-money", async (c) => {
++  const body = await c.req.json().catch(() => null);
++  if (!body?.provider || !body?.reference || !body?.status || !body?.externalId) {
++    return c.json({ error: "Malformed payload — expected provider, reference, status, externalId" }, 400);
++  }
++
++  const secretEnvKey = PROVIDER_SECRET_ENV[body.provider];
++  const configuredSecret = secretEnvKey ? process.env[secretEnvKey] : undefined;
++  if (!configuredSecret) {
++    // Refuse rather than silently accept — an unconfigured provider must
++    // never be able to complete a payment.
++    return c.json({ error: `${body.provider} webhook is not configured yet` }, 501);
++  }
++
++  const providedSecret = c.req.header("x-webhook-secret");
++  if (providedSecret !== configuredSecret) {
++    return c.json({ error: "Invalid signature" }, 401);
++  }
++
++  // externalId is OUR wallet_transactions.id, generated when the pending
++  // top-up was created — this is what ties the provider's callback back to
++  // a specific request instead of just "any pending row from this provider."
++  const txId = Number(body.externalId);
++  const [existing] = await db
++    .select()
++    .from(schema.walletTransactions)
++    .where(and(eq(schema.walletTransactions.id, txId), eq(schema.walletTransactions.status, "pending")))
++    .limit(1);
++  if (!existing) {
++    return c.json({ error: "No matching pending transaction" }, 404);
++  }
++
++  await db
++    .update(schema.walletTransactions)
++    .set({ status: body.status === "SUCCESS" ? "completed" : "failed", providerReference: body.reference })
++    .where(eq(schema.walletTransactions.id, txId));
++
++  return c.json({ ok: true });
++});
+diff --git a/server/routers/wallet.ts b/server/routers/wallet.ts
+index 945f99d..71cc228 100644
+--- a/server/routers/wallet.ts
++++ b/server/routers/wallet.ts
+@@ -1,16 +1,20 @@
+ import { z } from "zod";
+ import { router, protectedProcedure } from "../trpc.js";
+ import { schema } from "../../db/index.js";
+-import { eq, desc, sql } from "drizzle-orm";
++import { eq, desc, sql, and } from "drizzle-orm";
+ 
+ export const walletRouter = router({
++  // Only "completed" transactions count — a pending top-up that was never
++  // confirmed by the provider must never inflate the spendable balance.
+   balance: protectedProcedure.query(async ({ ctx }) => {
+     const [row] = await ctx.db
+       .select({
+         balance: sql<string>`coalesce(sum(${schema.walletTransactions.amount}), 0)`,
+       })
+       .from(schema.walletTransactions)
+-      .where(eq(schema.walletTransactions.userId, ctx.user.id));
++      .where(
++        and(eq(schema.walletTransactions.userId, ctx.user.id), eq(schema.walletTransactions.status, "completed")),
++      );
+     return { balance: row?.balance ?? "0" };
+   }),
+ 
+@@ -22,11 +26,18 @@ export const walletRouter = router({
+       .orderBy(desc(schema.walletTransactions.createdAt));
+   }),
+ 
++  // IMPORTANT: this does NOT credit the wallet. It only records that the
++  // user says they're paying — the balance never moves until a signed
++  // webhook from Airtel Money / MTN MoMo / Zamtel Kwacha confirms the charge
++  // actually happened (see server/routers/paymentWebhook.ts, not yet wired
++  // to a real provider). Do not add balance-crediting logic here: doing so
++  // is exactly the "call this endpoint, mint free money" exploit this
++  // replaced.
+   topUp: protectedProcedure
+     .input(
+       z.object({
+         amount: z.number().min(100),
+-        provider: z.enum(["M-Pesa", "Airtel", "MTN"]),
++        provider: z.enum(["Airtel Money", "MTN MoMo", "Zamtel Kwacha"]),
+       }),
+     )
+     .mutation(async ({ ctx, input }) => {
+@@ -36,16 +47,17 @@ export const walletRouter = router({
+           userId: ctx.user.id,
+           amount: String(input.amount),
+           type: "topup",
++          status: "pending",
+           provider: input.provider,
+-          description: `Top up via ${input.provider}`,
++          description: `Top up via ${input.provider} (awaiting confirmation)`,
+         })
+         .returning();
+ 
+       await ctx.db.insert(schema.notifications).values({
+         userId: ctx.user.id,
+         type: "payment",
+-        title: "Wallet top up",
+-        message: `K${input.amount.toLocaleString()} added via ${input.provider}.`,
++        title: "Top-up requested",
++        message: `Approve the ${input.provider} prompt on your phone to complete the K${input.amount.toLocaleString()} top-up.`,
+       });
+ 
+       return tx;
+diff --git a/src/pages/Cart.tsx b/src/pages/Cart.tsx
+index 1ae86ff..cc16c50 100644
+--- a/src/pages/Cart.tsx
++++ b/src/pages/Cart.tsx
+@@ -8,21 +8,30 @@ import { toast } from "sonner";
+ export default function Cart() {
+   const navigate = useNavigate();
+   const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
+-  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "airtel" | "mtn" | "wallet">("mpesa");
++  const [paymentMethod, setPaymentMethod] = useState<"AIRTEL" | "MTN" | "ZAMTEL" | "WALLET">("AIRTEL");
++  const [deliveryAddress, setDeliveryAddress] = useState("");
++  const [deliveryPhone, setDeliveryPhone] = useState("");
+   const [checkingOut, setCheckingOut] = useState(false);
+ 
+   const createOrder = trpc.order.create.useMutation({
+     onSuccess: () => {
+-      toast.success("Order placed successfully!");
++      toast.success(
++        paymentMethod === "WALLET"
++          ? "Order placed and paid from your wallet!"
++          : "Order placed — approve the payment prompt on your phone to confirm.",
++      );
+       clearCart();
+       navigate("/orders");
+     },
+-    onError: () => {
+-      toast.error("Failed to place order. Please try again.");
++    onError: (err) => {
++      toast.error(err.message || "Failed to place order. Please try again.");
+       setCheckingOut(false);
+     },
+   });
+ 
++  // Shown for the shopper's convenience only — the server recomputes every
++  // price and total from the database, so this display total is never what
++  // actually gets charged.
+   const shipping = count > 0 ? 150 : 0;
+   const grandTotal = total + shipping;
+ 
+@@ -30,23 +39,23 @@ export default function Cart() {
+ 
+   const handleCheckout = () => {
+     if (items.length === 0) return;
++    if (deliveryAddress.trim().length < 5) {
++      toast.error("Please enter a delivery address");
++      return;
++    }
++    if (deliveryPhone.trim().length < 6) {
++      toast.error("Please enter a contact phone number");
++      return;
++    }
+     setCheckingOut(true);
+ 
+-    const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+     createOrder.mutate({
+-      orderNumber,
+-      subtotal: String(total),
+-      shipping: String(shipping),
+-      discount: "0",
+-      total: String(grandTotal),
+-      paymentMethod: paymentMethod.toUpperCase(),
++      paymentMethod,
++      deliveryAddress: deliveryAddress.trim(),
++      deliveryPhone: deliveryPhone.trim(),
+       items: items.map((item) => ({
+         productId: item.productId,
+-        productName: item.name,
+-        productImage: item.image,
+-        price: String(item.price),
+         quantity: item.quantity,
+-        total: String(item.price * item.quantity),
+       })),
+     });
+   };
+@@ -131,6 +140,24 @@ export default function Cart() {
+         {/* Order Summary */}
+         <div className="space-y-4">
+           <div className="bg-white rounded-xl border border-peza-cream-dark p-5">
++            <h2 className="text-lg font-bold text-peza-brown mb-4">Delivery Details</h2>
++            <div className="space-y-3 mb-5">
++              <input
++                type="text"
++                placeholder="Delivery address (area, street, landmark)"
++                className="w-full border-2 border-peza-cream-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-peza-orange transition-colors"
++                value={deliveryAddress}
++                onChange={(e) => setDeliveryAddress(e.target.value)}
++              />
++              <input
++                type="tel"
++                placeholder="Contact phone number"
++                className="w-full border-2 border-peza-cream-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-peza-orange transition-colors"
++                value={deliveryPhone}
++                onChange={(e) => setDeliveryPhone(e.target.value)}
++              />
++            </div>
++
+             <h2 className="text-lg font-bold text-peza-brown mb-4">Order Summary</h2>
+             <div className="space-y-3">
+               <div className="flex justify-between text-sm">
+@@ -149,6 +176,7 @@ export default function Cart() {
+                 <span className="font-bold text-peza-brown">Total</span>
+                 <span className="font-extrabold text-peza-orange text-lg">{fmtK(grandTotal)}</span>
+               </div>
++              <p className="text-[11px] text-gray-400">Final total is confirmed by the server at checkout.</p>
+             </div>
+ 
+             {/* Payment Methods */}
+@@ -156,10 +184,10 @@ export default function Cart() {
+               <h3 className="text-sm font-bold text-peza-brown mb-3">Payment Method</h3>
+               <div className="grid grid-cols-2 gap-2">
+                 {[
+-                  { key: "mpesa" as const, label: "M-Pesa" },
+-                  { key: "airtel" as const, label: "Airtel" },
+-                  { key: "mtn" as const, label: "MTN" },
+-                  { key: "wallet" as const, label: "Wallet" },
++                  { key: "AIRTEL" as const, label: "Airtel Money" },
++                  { key: "MTN" as const, label: "MTN MoMo" },
++                  { key: "ZAMTEL" as const, label: "Zamtel Kwacha" },
++                  { key: "WALLET" as const, label: "Wallet" },
+                 ].map((m) => (
+                   <button
+                     key={m.key}
+@@ -170,6 +198,11 @@ export default function Cart() {
+                   </button>
+                 ))}
+               </div>
++              {paymentMethod !== "WALLET" && (
++                <p className="text-[11px] text-gray-400 mt-2">
++                  You'll get a payment prompt on your phone to approve after placing the order.
++                </p>
++              )}
+             </div>
+ 
+             <button
+diff --git a/src/pages/Home.tsx b/src/pages/Home.tsx
+index 72ad96b..1f0e882 100644
+--- a/src/pages/Home.tsx
++++ b/src/pages/Home.tsx
+@@ -4,7 +4,7 @@ import { ChevronRight, Zap, TrendingUp, Briefcase, Factory, ArrowRight } from "l
+ import { trpc } from "@/providers/trpc";
+ import PremiumProductCard from "@/components/PremiumProductCard";
+ 
+-const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "M-Pesa", "Airtel", "MTN", "Unilever"];
++const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "Zamtel", "Airtel", "MTN", "Unilever"];
+ 
+ export default function Home() {
+   const navigate = useNavigate();
+diff --git a/src/pages/Orders.tsx b/src/pages/Orders.tsx
+index 553e0ca..4678933 100644
+--- a/src/pages/Orders.tsx
++++ b/src/pages/Orders.tsx
+@@ -4,6 +4,7 @@ import { Package, ChevronRight } from "lucide-react";
+ 
+ const statusColors: Record<string, string> = {
+   pending: "bg-amber-50 text-amber-700",
++  paid: "bg-teal-50 text-teal-700",
+   processing: "bg-orange-50 text-orange-700",
+   shipped: "bg-blue-50 text-blue-700",
+   delivered: "bg-green-50 text-green-700",
+@@ -17,7 +18,7 @@ export default function Orders() {
+   const filtered = filter === "all" ? orders : orders?.filter((o) => o.status === filter);
+   const fmtK = (p: string | number) => `K${Number(p).toLocaleString()}`;
+ 
+-  const filters = ["all", "pending", "processing", "shipped", "delivered"];
++  const filters = ["all", "pending", "paid", "processing", "shipped", "delivered"];
+ 
+   return (
+     <div className="max-w-7xl mx-auto px-4">
+diff --git a/src/pages/ProductDetail.tsx b/src/pages/ProductDetail.tsx
+index e07e6bd..0cfff8e 100644
+--- a/src/pages/ProductDetail.tsx
++++ b/src/pages/ProductDetail.tsx
+@@ -195,9 +195,9 @@ export default function ProductDetail() {
+ 
+         {/* Payment Methods */}
+         <div className="flex justify-center gap-6 mt-4 text-xs text-gray-500 font-medium">
+-          <span>M-Pesa</span>
+-          <span>Airtel</span>
+-          <span>MTN</span>
++          <span>Zamtel Kwacha</span>
++          <span>Airtel Money</span>
++          <span>MTN MoMo</span>
+           <span>Wallet</span>
+           <span>Chilimba</span>
+         </div>
+diff --git a/src/pages/Wallet.tsx b/src/pages/Wallet.tsx
+index 89e9f82..2378d1c 100644
+--- a/src/pages/Wallet.tsx
++++ b/src/pages/Wallet.tsx
+@@ -6,7 +6,7 @@ import { toast } from "sonner";
+ export default function Wallet() {
+   const [showTopUp, setShowTopUp] = useState(false);
+   const [topUpAmount, setTopUpAmount] = useState("");
+-  const [provider, setProvider] = useState<"M-Pesa" | "Airtel" | "MTN">("M-Pesa");
++  const [provider, setProvider] = useState<"Airtel Money" | "MTN MoMo" | "Zamtel Kwacha">("Airtel Money");
+ 
+   const { data: balanceData } = trpc.wallet.balance.useQuery();
+   const { data: transactions } = trpc.wallet.transactions.useQuery();
+@@ -14,12 +14,13 @@ export default function Wallet() {
+ 
+   const topUp = trpc.wallet.topUp.useMutation({
+     onSuccess: () => {
+-      toast.success(`K${Number(topUpAmount).toLocaleString()} added via ${provider}!`);
++      toast.success(`Approve the ${provider} prompt on your phone to complete the top-up.`);
+       setShowTopUp(false);
+       setTopUpAmount("");
+       utils.wallet.balance.invalidate();
+       utils.wallet.transactions.invalidate();
+     },
++    onError: (err) => toast.error(err.message || "Couldn't start top-up"),
+   });
+ 
+   const balance = Number(balanceData?.balance || 0);
+@@ -64,7 +65,7 @@ export default function Wallet() {
+ 
+           {/* Provider Selection */}
+           <div className="flex gap-2 mb-4">
+-            {(["M-Pesa", "Airtel", "MTN"] as const).map((p) => (
++            {(["Airtel Money", "MTN MoMo", "Zamtel Kwacha"] as const).map((p) => (
+               <button
+                 key={p}
+                 onClick={() => setProvider(p)}
+@@ -133,7 +134,16 @@ export default function Wallet() {
+               </div>
+               <div className="flex-1 min-w-0">
+                 <p className="text-sm font-semibold text-peza-brown truncate">{t.description}</p>
+-                <p className="text-xs text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</p>
++                <div className="flex items-center gap-2">
++                  <p className="text-xs text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</p>
++                  {t.status !== "completed" && (
++                    <span
++                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${t.status === "pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-500"}`}
++                    >
++                      {t.status.toUpperCase()}
++                    </span>
++                  )}
++                </div>
+               </div>
+               <span className={`text-sm font-bold ${Number(t.amount) > 0 ? "text-peza-green" : "text-peza-red"}`}>
+                 {Number(t.amount) > 0 ? "+" : ""}{fmtK(Math.abs(Number(t.amount)))}
+-- 
+2.43.0
+

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import {
@@ -23,6 +25,7 @@ const menuItems = [
 export default function Profile() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [language, setLanguage] = useState("English");
   const { data: balanceData } = trpc.wallet.balance.useQuery();
   const { data: orders } = trpc.order.list.useQuery();
 
@@ -63,7 +66,17 @@ export default function Profile() {
           return (
             <button
               key={item.label}
-              onClick={() => item.path !== "#" && navigate(item.path)}
+              onClick={() => {
+                if (item.label === "Language") {
+                  const next = language === "English" ? "Bemba" : "English";
+                  setLanguage(next);
+                  toast.success(`Language set to ${next}`);
+                } else if (item.path !== "#") {
+                  navigate(item.path);
+                } else {
+                  toast.info(`${item.label} is coming soon`);
+                }
+              }}
               className="w-full flex items-center gap-4 py-4 bg-white border-b border-peza-cream-dark text-left hover:bg-peza-cream/50 transition-colors rounded-lg px-3"
             >
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}>

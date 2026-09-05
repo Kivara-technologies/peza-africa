@@ -25,7 +25,7 @@ export default function BottomNav() {
           const whatsappFab = i === 2 && (
             <a
               key="whatsapp"
-              href="https://wa.me/260977123456?text=Hi%20PEZA!"
+              href="https://wa.me/260570230160?text=Hi%20PEZA!"
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center -mt-6"

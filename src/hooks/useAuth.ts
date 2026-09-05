@@ -31,11 +31,19 @@ export function useAuth(options?: UseAuthOptions) {
     onSuccess: async () => {
       await supabase.auth.signOut();
       await utils.invalidate();
-      navigate(redirectPath);
+      navigate(redirectPath, { replace: true });
     },
   });
 
-  const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
+  const logout = useCallback(async () => {
+    try {
+      await logoutMutation.mutateAsync();
+    } catch {
+      await supabase.auth.signOut();
+      await utils.invalidate();
+      navigate(redirectPath, { replace: true });
+    }
+  }, [logoutMutation, navigate, redirectPath, utils]);
 
   // Refetch the current user whenever the Supabase session changes
   // (sign in, sign out, token refresh, OAuth redirect callback).
