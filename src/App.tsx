@@ -127,7 +127,7 @@ export default function App() {
         />
         <USSDBanner />
         <Header />
-        <main className="pb-20 pt-16">
+        <main className="pb-20 md:pb-6 pt-16">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
