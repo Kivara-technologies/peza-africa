@@ -22,11 +22,19 @@ alter table wallet_transactions
 
 -- order_items.product_id previously had no FK at all. Add it now that
 -- order.create always writes real product ids (server-looked-up, not
--- client-supplied).
-alter table order_items
-  add constraint order_items_product_id_fkey
-  foreign key (product_id) references products(id)
-  not valid; -- validate separately if there's existing bad data to clean up first
+-- client-supplied). Wrapped in a check so this migration can be safely
+-- re-run without erroring if the constraint already exists.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'order_items_product_id_fkey'
+  ) then
+    alter table order_items
+      add constraint order_items_product_id_fkey
+      foreign key (product_id) references products(id)
+      not valid; -- validate separately if there's existing bad data to clean up first
+  end if;
+end $$;
 
 -- Uncomment once you've confirmed no orphaned product_id values exist:
 -- alter table order_items validate constraint order_items_product_id_fkey;
