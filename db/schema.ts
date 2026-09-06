@@ -142,6 +142,16 @@ export const airtimeTransactions = pgTable("airtime_transactions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const vendorProfiles = pgTable("vendor_profiles", {
+  userId: uuid("user_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
+  businessName: text("business_name").notNull(),
+  description: text("description"),
+  phone: text("phone"),
+  location: text("location"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
   // ── Suppliers ────────────────────────────────────────────────────────
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
