@@ -14,6 +14,7 @@ import Chat from "./pages/Chat";
 import Jobs from "./pages/Jobs";
 import Suppliers from "./pages/Suppliers";
 import Profile from "./pages/Profile";
+import Vendor from "./pages/Vendor";
 import Notifications from "./pages/Notifications";
 import MarketPrices from "./pages/MarketPrices";
 import ShippingCalc from "./pages/ShippingCalc";
@@ -141,6 +142,7 @@ export default function App() {
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/vendor" element={<Vendor />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/market-prices" element={<MarketPrices />} />
   <Route path="/shipping" element={<ShippingCalc />} />

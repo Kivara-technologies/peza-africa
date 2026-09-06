@@ -24,8 +24,11 @@ export const appRouter = router({
   job: jobRouter,
   chat: chatRouter,
   notification: notificationRouter,
+<<<<<<< HEAD
   chilimba: chilimbaRouter,
   airtime: airtimeRouter,
+=======
+>>>>>>> 6898e4101e734d9bf1c2e27b8bd8aaefa73c4e5c
   vendor: vendorRouter,
 });
 
