@@ -40,7 +40,7 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
 
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const num = product.whatsappNumber || "260977123456";
+    const num = product.whatsappNumber || "260570230160";
     const msg = encodeURIComponent(`Hi! I'm interested in "${product.name}" on PEZA. Is it still available?`);
     window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
   };

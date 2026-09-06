@@ -4,7 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useCart } from "@/App";
 import { toast } from "sonner";
-import ChilimbaCalculator from "@/components/ChilimbaCalculator";
+import LaybyCalculator from "@/components/LaybyCalculator";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function ProductDetail() {
@@ -160,7 +160,7 @@ export default function ProductDetail() {
         {/* Chilimba Calculator */}
         {product.laybyMonths && (
           <div className="mt-5">
-            <ChilimbaCalculator price={Number(product.price)} defaultMonths={product.laybyMonths} />
+            <LaybyCalculator price={Number(product.price)} defaultMonths={product.laybyMonths} />
           </div>
         )}
 

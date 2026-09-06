@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Wallet as WalletIcon, Plus, Send, Download, CreditCard, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
 
 export default function Wallet() {
+  const navigate = useNavigate();
   const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [provider, setProvider] = useState<"Airtel Money" | "MTN MoMo" | "Zamtel Kwacha">("Airtel Money");
@@ -44,9 +46,9 @@ export default function Wallet() {
         <div className="flex justify-around mt-6">
           {[
             { icon: Plus, label: "Top Up", action: () => setShowTopUp(true) },
-            { icon: Send, label: "Send", action: () => toast("Coming soon") },
-            { icon: Download, label: "Receive", action: () => toast("Coming soon") },
-            { icon: CreditCard, label: "Pay", action: () => toast("Coming soon") },
+            { icon: Send, label: "Send", action: () => navigate("/chat") },
+            { icon: Download, label: "Receive", action: () => toast.info("Share your PEZA wallet details from the chat to receive funds.") },
+            { icon: CreditCard, label: "Pay", action: () => navigate("/shop") },
           ].map(({ icon: Icon, label, action }) => (
             <button key={label} onClick={action} className="flex flex-col items-center gap-1.5 group">
               <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">

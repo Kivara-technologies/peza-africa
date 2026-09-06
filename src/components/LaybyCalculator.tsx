@@ -6,7 +6,7 @@ interface Props {
   defaultMonths?: number;
 }
 
-export default function ChilimbaCalculator({ price, defaultMonths = 3 }: Props) {
+export default function LaybyCalculator({ price, defaultMonths = 3 }: Props) {
   const [months, setMonths] = useState(defaultMonths);
   const monthly = Math.ceil(price / months);
   const total = monthly * months;
