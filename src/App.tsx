@@ -17,8 +17,9 @@ import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import MarketPrices from "./pages/MarketPrices";
 import ShippingCalc from "./pages/ShippingCalc";
-import Chilimba from "./pages/Chilimba";
-import Login from "./pages/Login";
+  import Chilimba from "./pages/Chilimba";
+  import Vendor from "./pages/Vendor";
+  import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 // Cart Context
@@ -144,6 +145,7 @@ export default function App() {
             <Route path="/market-prices" element={<MarketPrices />} />
   <Route path="/shipping" element={<ShippingCalc />} />
   <Route path="/chilimba" element={<Chilimba />} />
+  <Route path="/vendor" element={<Vendor />} />
   <Route path="/login" element={<Login />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
