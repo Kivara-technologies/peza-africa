@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { Briefcase, MapPin, Clock, Flame, CheckCircle, LogIn } from "lucide-react";
+import { Briefcase, MapPin, Clock, Flame, CheckCircle, LogIn, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 const jobCategories = ["All", "Plumbing", "Tech", "Cleaning", "Delivery", "Electrical", "Fashion", "Photography", "HVAC"];
@@ -14,6 +14,11 @@ export default function Jobs() {
   const [selectedJob, setSelectedJob] = useState<number | null>(null);
   const [applied, setApplied] = useState(false);
   const [cover, setCover] = useState("");
+  const [view, setView] = useState<"browse" | "post" | "mine" | "applications">("browse");
+  const [postForm, setPostForm] = useState({ title: "", company: "", category: "Delivery", location: "", type: "Contract", salary: "", description: "" });
+  const myJobs = trpc.job.mine.useQuery(undefined, { enabled: isAuthenticated && view === "mine" });
+  const myApplications = trpc.job.myApplications.useQuery(undefined, { enabled: isAuthenticated && view === "applications" });
+  const createJob = trpc.job.create.useMutation({ onSuccess: () => { toast.success("Job posted"); setView("mine"); myJobs.refetch(); }, onError: (e) => toast.error(e.message) });
 
   const { data: jobs } = trpc.job.list.useQuery({ category: activeCat === "All" ? undefined : activeCat });
 
@@ -132,9 +137,17 @@ export default function Jobs() {
       <div className="flex items-center gap-2 mb-4">
         <Briefcase className="w-6 h-6 text-peza-brown" />
         <h1 className="text-2xl font-extrabold text-peza-brown">Find Work in Africa</h1>
-      </div>
-
-      {/* Category Filter */}
+  </div>
+  <div className="flex gap-2 overflow-x-auto mb-4">
+    {[['browse', 'Browse'], ['post', 'Post a job'], ['mine', 'My postings'], ['applications', 'My applications']].map(([key, label]) => (
+      <button key={key} onClick={() => { if (!isAuthenticated && key !== 'browse') { navigate('/login'); return; } setView(key as typeof view); }} className={`px-3 py-2 rounded-lg text-sm font-semibold ${view === key ? 'bg-peza-brown text-white' : 'bg-white text-peza-brown border border-peza-cream-dark'}`}>{label}</button>
+    ))}
+  </div>
+  {view === 'post' && <section className="bg-white rounded-xl border border-peza-cream-dark p-5 mb-4 space-y-3"><h2 className="font-bold flex items-center gap-2"><Plus className="w-4 h-4" /> Post a delivery or service job</h2><div className="grid gap-3 sm:grid-cols-2">{(['title','company','location','salary'] as const).map(field => <input key={field} className="border rounded-lg px-3 py-2" placeholder={field[0].toUpperCase() + field.slice(1)} value={postForm[field]} onChange={e => setPostForm({ ...postForm, [field]: e.target.value })} />)}<textarea className="border rounded-lg px-3 py-2 sm:col-span-2" placeholder="Describe the work and requirements" value={postForm.description} onChange={e => setPostForm({ ...postForm, description: e.target.value })} /></div><button className="bg-peza-orange text-white rounded-lg px-4 py-2 font-semibold" onClick={() => createJob.mutate({ ...postForm, requirements: [] })}>Publish job</button></section>}
+  {view === 'mine' && <section className="bg-white rounded-xl border border-peza-cream-dark p-5 mb-4"><h2 className="font-bold mb-3">My postings</h2>{myJobs.data?.map(job => <p key={job.id} className="py-2 border-b text-sm">{job.title} · {job.category} · {job.location}</p>)}{myJobs.data?.length === 0 && <p className="text-sm text-gray-500">You have not posted a job yet.</p>}</section>}
+  {view === 'applications' && <section className="bg-white rounded-xl border border-peza-cream-dark p-5 mb-4"><h2 className="font-bold mb-3">My applications</h2>{myApplications.data?.map(application => <p key={application.id} className="py-2 border-b text-sm">Application #{application.id} · Job #{application.jobId}</p>)}{myApplications.data?.length === 0 && <p className="text-sm text-gray-500">You have not applied to any jobs yet.</p>}</section>}
+  {view === 'browse' && <>
+  {/* Category Filter */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">
         {jobCategories.map((c) => (
           <button
@@ -184,6 +197,7 @@ export default function Jobs() {
           <h3 className="text-lg font-bold text-peza-brown">No jobs found</h3>
         </div>
       )}
+  </>}
     </div>
   );
 }
