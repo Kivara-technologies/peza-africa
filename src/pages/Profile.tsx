@@ -12,7 +12,7 @@ const menuItems = [
   { icon: Wallet, label: "My Wallet", path: "/wallet", color: "bg-green-50 text-green-600" },
   { icon: Briefcase, label: "Find Work", path: "/jobs", color: "bg-purple-50 text-purple-600" },
   { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" },
-  { icon: BarChart3, label: "Vendor Dashboard", path: "#", color: "bg-orange-50 text-orange-600" },
+  { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" },
   { icon: Bell, label: "Notifications", path: "/notifications", color: "bg-red-50 text-red-600" },
   { icon: Globe, label: "Language", path: "#", color: "bg-indigo-50 text-indigo-600" },
   { icon: TrendingUp, label: "Market Prices", path: "/market-prices", color: "bg-cyan-50 text-cyan-600" },

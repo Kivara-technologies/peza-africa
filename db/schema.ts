@@ -40,6 +40,7 @@ export const products = pgTable("products", {
   realPhoto: text("real_photo"),
   categoryId: integer("category_id").references(() => categories.id),
   categorySlug: text("category_slug"), // denormalized for fast filtering
+  vendorId: uuid("vendor_id").references(() => profiles.id), // owning seller, null = platform-seeded
   vendor: text("vendor").notNull().default("PEZA Marketplace"),
   rating: numeric("rating").notNull().default("4.5"),
   reviewCount: integer("review_count").notNull().default(0),

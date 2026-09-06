@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function WhatsAppButton({ productName, phone, size = "md", variant = "button" }: Props) {
-  const num = phone || "260977123456";
+  const num = phone || "260570230160";
   const msg = encodeURIComponent(`Hi! I'm interested in "${productName}" on PEZA. Is it still available?`);
 
   const sizeClasses = {
