@@ -9,6 +9,7 @@ import { marketRouter } from "./routers/market.js";
 import { jobRouter } from "./routers/job.js";
 import { chatRouter } from "./routers/chat.js";
 import { notificationRouter } from "./routers/notification.js";
+import { chilimbaRouter } from "./routers/chilimba.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -21,6 +22,7 @@ export const appRouter = router({
   job: jobRouter,
   chat: chatRouter,
   notification: notificationRouter,
+  chilimba: chilimbaRouter,
 });
 
 export type AppRouter = typeof appRouter;
