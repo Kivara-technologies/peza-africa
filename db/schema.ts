@@ -41,6 +41,7 @@ export const products = pgTable("products", {
   categoryId: integer("category_id").references(() => categories.id),
   categorySlug: text("category_slug"), // denormalized for fast filtering
   vendor: text("vendor").notNull().default("PEZA Marketplace"),
+  sellerId: uuid("seller_id").references(() => profiles.id),
   rating: numeric("rating").notNull().default("4.5"),
   reviewCount: integer("review_count").notNull().default(0),
   whatsappNumber: text("whatsapp_number"),
