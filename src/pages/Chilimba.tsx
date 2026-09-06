@@ -1,0 +1,18 @@
+import { useState } from "react";
+import { Users, Plus, Coins } from "lucide-react";
+import { trpc } from "@/providers/trpc";
+import { toast } from "sonner";
+
+export default function Chilimba() {
+  const [form, setForm] = useState({ name: "", contributionAmount: "", cycleLength: "" });
+  const circles = trpc.chilimba.list.useQuery();
+  const create = trpc.chilimba.create.useMutation({ onSuccess: () => { toast.success("Circle created"); circles.refetch(); setForm({ name: "", contributionAmount: "", cycleLength: "" }); }, onError: (e) => toast.error(e.message) });
+  const join = trpc.chilimba.join.useMutation({ onSuccess: () => { toast.success("You joined the circle"); circles.refetch(); }, onError: (e) => toast.error(e.message) });
+  const contribute = trpc.chilimba.contribute.useMutation({ onSuccess: () => toast.success("Contribution received"), onError: (e) => toast.error(e.message) });
+
+  return <div className="max-w-5xl mx-auto px-4 space-y-6">
+    <header><p className="text-xs font-bold uppercase tracking-widest text-peza-orange">Community savings</p><h1 className="text-3xl font-extrabold text-peza-brown">Chilimba circles</h1><p className="text-sm text-peza-brown/70 mt-1">Save together, contribute from your wallet, and rotate payouts transparently.</p></header>
+    <section className="bg-white rounded-2xl border border-peza-cream-dark p-5 space-y-3"><h2 className="font-bold flex items-center gap-2"><Plus className="w-4 h-4 text-peza-orange" /> Create a circle</h2><div className="grid gap-3 md:grid-cols-4"><input aria-label="Circle name" className="border rounded-lg px-3 py-2" placeholder="Circle name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /><input aria-label="Contribution amount" className="border rounded-lg px-3 py-2" type="number" placeholder="Amount (K)" value={form.contributionAmount} onChange={e => setForm({ ...form, contributionAmount: e.target.value })} /><input aria-label="Members" className="border rounded-lg px-3 py-2" type="number" placeholder="Members" value={form.cycleLength} onChange={e => setForm({ ...form, cycleLength: e.target.value })} /><button className="bg-peza-orange text-white rounded-lg px-4 py-2 font-semibold disabled:opacity-50" disabled={create.isPending} onClick={() => create.mutate({ name: form.name, contributionAmount: Number(form.contributionAmount), cycleLength: Number(form.cycleLength) })}>Create circle</button></div></section>
+    <section className="grid gap-4 md:grid-cols-2">{circles.data?.map(circle => <article key={circle.id} className="bg-white rounded-2xl border border-peza-cream-dark p-5 space-y-4"><div className="flex justify-between"><div><h2 className="font-bold text-lg">{circle.name}</h2><p className="text-sm text-peza-brown/60">Cycle {circle.currentCycle} · {circle.status}</p></div><Coins className="text-peza-orange" /></div><p className="text-2xl font-extrabold text-peza-brown">K{Number(circle.contributionAmount).toLocaleString()} <span className="text-sm font-normal">per cycle</span></p><div className="flex gap-2"><button className="flex-1 border border-peza-orange text-peza-orange rounded-lg py-2 font-semibold" onClick={() => join.mutate({ circleId: circle.id })}>Join circle</button><button className="flex-1 bg-peza-brown text-white rounded-lg py-2 font-semibold" onClick={() => contribute.mutate({ circleId: circle.id })}>Contribute</button></div></article>)}{circles.data?.length === 0 && <div className="md:col-span-2 text-center py-12 text-peza-brown/60"><Users className="mx-auto mb-2" /><p>No circles yet. Create the first one.</p></div>}</section>
+  </div>;
+}
