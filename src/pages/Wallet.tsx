@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Wallet as WalletIcon, Plus, Send, Download, CreditCard, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
+import AirtimeTopUp from "@/components/AirtimeTopUp";
 
 export default function Wallet() {
   const navigate = useNavigate();
@@ -120,6 +121,8 @@ export default function Wallet() {
           </div>
         </div>
       )}
+
+      <div className="mt-6"><AirtimeTopUp /></div>
 
       {/* Transaction History */}
       <h2 className="text-lg font-bold text-peza-brown mt-6 mb-3">Transaction History</h2>

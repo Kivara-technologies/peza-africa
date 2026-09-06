@@ -10,6 +10,7 @@ import { jobRouter } from "./routers/job.js";
 import { chatRouter } from "./routers/chat.js";
 import { notificationRouter } from "./routers/notification.js";
 import { chilimbaRouter } from "./routers/chilimba.js";
+import { airtimeRouter } from "./routers/airtime.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -23,6 +24,7 @@ export const appRouter = router({
   chat: chatRouter,
   notification: notificationRouter,
   chilimba: chilimbaRouter,
+  airtime: airtimeRouter,
 });
 
 export type AppRouter = typeof appRouter;
