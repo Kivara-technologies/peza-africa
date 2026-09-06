@@ -11,11 +11,34 @@ const orderItemInput = z.object({
 
 export const orderRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db
+    const myOrders = await ctx.db
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.userId, ctx.user.id))
       .orderBy(desc(schema.orders.createdAt));
+
+    if (myOrders.length === 0) return [];
+
+    // One extra query for every item across all orders — not one query per
+    // order — so this stays fast no matter how many orders someone has.
+    const items = await ctx.db
+      .select()
+      .from(schema.orderItems)
+      .where(
+        inArray(
+          schema.orderItems.orderId,
+          myOrders.map((o) => o.id),
+        ),
+      );
+
+    const itemsByOrder = new Map<number, typeof items>();
+    for (const item of items) {
+      const list = itemsByOrder.get(item.orderId) ?? [];
+      list.push(item);
+      itemsByOrder.set(item.orderId, list);
+    }
+
+    return myOrders.map((o) => ({ ...o, items: itemsByOrder.get(o.id) ?? [] }));
   }),
 
   create: protectedProcedure
