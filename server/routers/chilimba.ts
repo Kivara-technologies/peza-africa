@@ -58,6 +58,15 @@ export const chilimbaRouter = router({
       if (Number(balance?.value ?? 0) < amount) throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient wallet balance" });
       const [debit] = await tx.insert(schema.walletTransactions).values({ userId: ctx.user.id, amount: (-amount).toFixed(2), type: "payment", status: "completed", description: `Chilimba: ${circle.name}` }).returning();
       const [contribution] = await tx.insert(schema.chilimbaContributions).values({ circleId: circle.id, memberId: member.id, cycle: circle.currentCycle, amount: amount.toFixed(2), walletTransactionId: debit.id }).returning();
+      const [{ count: cycleCount }] = await tx.select({ count: sql<number>`count(*)` }).from(schema.chilimbaContributions).where(and(eq(schema.chilimbaContributions.circleId, circle.id), eq(schema.chilimbaContributions.cycle, circle.currentCycle)));
+      const [{ count: memberCount }] = await tx.select({ count: sql<number>`count(*)` }).from(schema.chilimbaMembers).where(eq(schema.chilimbaMembers.circleId, circle.id));
+      if (Number(cycleCount) === Number(memberCount) && Number(memberCount) === circle.cycleLength) {
+        const [recipient] = await tx.select().from(schema.chilimbaMembers).where(and(eq(schema.chilimbaMembers.circleId, circle.id), eq(schema.chilimbaMembers.payoutPosition, circle.currentCycle)));
+        if (recipient) {
+          await tx.insert(schema.walletTransactions).values({ userId: recipient.userId, amount: (amount * Number(memberCount)).toFixed(2), type: "credit", status: "completed", description: `Chilimba payout: ${circle.name}, cycle ${circle.currentCycle}` });
+        }
+        await tx.update(schema.chilimbaCircles).set({ currentCycle: circle.currentCycle + 1, status: circle.currentCycle >= circle.cycleLength ? "completed" : "open" }).where(eq(schema.chilimbaCircles.id, circle.id));
+      }
       return contribution;
     }),
   ),

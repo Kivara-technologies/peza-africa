@@ -129,7 +129,20 @@ export const chilimbaContributions = pgTable("chilimba_contributions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Suppliers ────────────────────────────────────────────────────────
+export const airtimeTransactions = pgTable("airtime_transactions", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => profiles.id),
+  network: text("network").notNull(),
+  productType: text("product_type").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  amount: numeric("amount").notNull(),
+  status: text("status").notNull().default("pending"),
+  providerReference: text("provider_reference"),
+  walletTransactionId: integer("wallet_transaction_id").references(() => walletTransactions.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+  // ── Suppliers ────────────────────────────────────────────────────────
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -155,7 +168,7 @@ export const marketPrices = pgTable("market_prices", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// ── Jobs ─────────────────────────────────────────────────────────────
+// ── Jobs ───────────────────────────────────────────────���─────────────
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
