@@ -4,12 +4,13 @@ import { trpc } from "@/providers/trpc";
 import {
   Package, Wallet, Briefcase, Factory, Bell,
   Globe, TrendingUp, Ship, Settings, LogOut, ChevronRight,
-  BarChart3
+  BarChart3, Users
 } from "lucide-react";
 
 const menuItems = [
   { icon: Package, label: "My Orders", path: "/orders", color: "bg-blue-50 text-blue-600" },
   { icon: Wallet, label: "My Wallet", path: "/wallet", color: "bg-green-50 text-green-600" },
+  { icon: Users, label: "Chilimba", path: "/chilimba", color: "bg-pink-50 text-pink-600" },
   { icon: Briefcase, label: "Find Work", path: "/jobs", color: "bg-purple-50 text-purple-600" },
   { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" },
   { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" },

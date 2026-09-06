@@ -166,3 +166,49 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ── Chilimba (rotating savings circles) ─────────────────────────────
+// A group of members each contribute a fixed amount per round; the full
+// pot is paid out to one member per round, in join order, until every
+// member has been paid once. Money only ever moves between members'
+// existing wallet balances (wallet_transactions) — Chilimba never
+// creates or destroys money on its own.
+export const chilimbaCircles = pgTable("chilimba_circles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  contributionAmount: numeric("contribution_amount").notNull(),
+  frequencyDays: integer("frequency_days").notNull().default(7), // 7 = weekly, 30 = monthly
+  maxMembers: integer("max_members").notNull(),
+  creatorId: uuid("creator_id").notNull().references(() => profiles.id),
+  status: text("status").notNull().default("recruiting"), // recruiting | active | completed
+  currentRound: integer("current_round").notNull().default(0), // 0 until full and active
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chilimbaMembers = pgTable("chilimba_members", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => profiles.id),
+  payoutPosition: integer("payout_position").notNull(), // join order = payout order, 1-indexed
+  hasBeenPaid: boolean("has_been_paid").notNull().default(false),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+});
+
+export const chilimbaContributions = pgTable("chilimba_contributions", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => profiles.id),
+  round: integer("round").notNull(),
+  amount: numeric("amount").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chilimbaPayouts = pgTable("chilimba_payouts", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
+  round: integer("round").notNull(),
+  recipientId: uuid("recipient_id").notNull().references(() => profiles.id),
+  amount: numeric("amount").notNull(),
+  paidAt: timestamp("paid_at").notNull().defaultNow(),
+});
