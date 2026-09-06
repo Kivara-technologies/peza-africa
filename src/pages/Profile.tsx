@@ -15,10 +15,10 @@ const menuItems = [
   { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" },
   { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" },
   { icon: Bell, label: "Notifications", path: "/notifications", color: "bg-red-50 text-red-600" },
-  { icon: Globe, label: "Language", path: "#", color: "bg-indigo-50 text-indigo-600" },
+  { icon: Globe, label: "Language", path: "/language", color: "bg-indigo-50 text-indigo-600" },
   { icon: TrendingUp, label: "Market Prices", path: "/market-prices", color: "bg-cyan-50 text-cyan-600" },
   { icon: Ship, label: "Shipping Calculator", path: "/shipping", color: "bg-teal-50 text-teal-600" },
-  { icon: Settings, label: "Settings", path: "#", color: "bg-gray-50 text-gray-600" },
+  { icon: Settings, label: "Settings", path: "/settings", color: "bg-gray-50 text-gray-600" },
 ];
 
 export default function Profile() {

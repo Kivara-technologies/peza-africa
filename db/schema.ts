@@ -17,6 +17,7 @@ export const profiles = pgTable("profiles", {
   name: text("name"),
   email: text("email"),
   phone: text("phone"),
+  preferredLanguage: text("preferred_language").notNull().default("en"), // en | bem | nya
   role: text("role").notNull().default("customer"), // "customer" | "admin"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

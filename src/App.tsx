@@ -16,6 +16,8 @@ import Suppliers from "./pages/Suppliers";
 import Profile from "./pages/Profile";
 import Vendor from "./pages/Vendor";
 import Chilimba from "./pages/Chilimba";
+import Settings from "./pages/Settings";
+import Language from "./pages/Language";
 import Notifications from "./pages/Notifications";
 import MarketPrices from "./pages/MarketPrices";
 import ShippingCalc from "./pages/ShippingCalc";
@@ -143,6 +145,8 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/vendor" element={<Vendor />} />
             <Route path="/chilimba" element={<Chilimba />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/language" element={<Language />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/market-prices" element={<MarketPrices />} />
             <Route path="/shipping" element={<ShippingCalc />} />
