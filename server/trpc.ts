@@ -4,8 +4,12 @@ import { createClient } from "@supabase/supabase-js";
 import { db, schema } from "../db/index.js";
 import { eq } from "drizzle-orm";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "preview-placeholder-service-role-key";
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("[v0] Supabase server credentials missing; auth-backed server actions are disabled in preview.");
+}
 
 // Admin client used only on the server to verify user JWTs.
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {

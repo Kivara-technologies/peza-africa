@@ -4,6 +4,7 @@ import { Package, ChevronRight } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-50 text-amber-700",
+  paid: "bg-teal-50 text-teal-700",
   processing: "bg-orange-50 text-orange-700",
   shipped: "bg-blue-50 text-blue-700",
   delivered: "bg-green-50 text-green-700",
@@ -17,7 +18,7 @@ export default function Orders() {
   const filtered = filter === "all" ? orders : orders?.filter((o) => o.status === filter);
   const fmtK = (p: string | number) => `K${Number(p).toLocaleString()}`;
 
-  const filters = ["all", "pending", "processing", "shipped", "delivered"];
+  const filters = ["all", "pending", "paid", "processing", "shipped", "delivered"];
 
   return (
     <div className="max-w-7xl mx-auto px-4">

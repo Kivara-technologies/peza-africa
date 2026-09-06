@@ -4,7 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useCart } from "@/App";
 import { toast } from "sonner";
-import ChilimbaCalculator from "@/components/ChilimbaCalculator";
+import LaybyCalculator from "@/components/LaybyCalculator";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function ProductDetail() {
@@ -160,7 +160,7 @@ export default function ProductDetail() {
         {/* Chilimba Calculator */}
         {product.laybyMonths && (
           <div className="mt-5">
-            <ChilimbaCalculator price={Number(product.price)} defaultMonths={product.laybyMonths} />
+            <LaybyCalculator price={Number(product.price)} defaultMonths={product.laybyMonths} />
           </div>
         )}
 
@@ -180,9 +180,9 @@ export default function ProductDetail() {
 
         {/* Payment Methods */}
         <div className="flex justify-center gap-6 mt-4 text-xs text-gray-500 font-medium">
-          <span>M-Pesa</span>
-          <span>Airtel</span>
-          <span>MTN</span>
+          <span>Zamtel Kwacha</span>
+          <span>Airtel Money</span>
+          <span>MTN MoMo</span>
           <span>Wallet</span>
           <span>Chilimba</span>
         </div>

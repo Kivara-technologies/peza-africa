@@ -230,7 +230,12 @@ export const chilimbaRouter = router({
             balance: sql<string>`coalesce(sum(${schema.walletTransactions.amount}), 0)`,
           })
           .from(schema.walletTransactions)
-          .where(eq(schema.walletTransactions.userId, ctx.user.id));
+          .where(
+            and(
+              eq(schema.walletTransactions.userId, ctx.user.id),
+              eq(schema.walletTransactions.status, "completed"),
+            ),
+          );
         const balance = Number(balanceRow?.balance ?? 0);
 
         if (balance < contributionAmount) {
@@ -245,6 +250,7 @@ export const chilimbaRouter = router({
           userId: ctx.user.id,
           amount: (-contributionAmount).toString(),
           type: "payment",
+          status: "completed", // internal transfer between members — immediate, never pending
           description: `Chilimba contribution — "${circle.name}" (round ${circle.currentRound})`,
         });
 
@@ -291,6 +297,7 @@ export const chilimbaRouter = router({
           userId: recipient.userId,
           amount: pot.toString(),
           type: "refund",
+          status: "completed", // internal transfer between members — immediate, never pending
           description: `Chilimba payout — "${circle.name}" (round ${circle.currentRound})`,
         });
 

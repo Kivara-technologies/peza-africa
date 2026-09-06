@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function WhatsAppButton({ productName, phone, size = "md", variant = "button" }: Props) {
-  const num = phone || "260570230160";
+  const num = (phone || "260570230160").replace(/\D/g, "");
   const msg = encodeURIComponent(`Hi! I'm interested in "${productName}" on PEZA. Is it still available?`);
 
   const sizeClasses = {
@@ -24,7 +24,8 @@ export default function WhatsAppButton({ productName, phone, size = "md", varian
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-600 transition-all hover:scale-110"
-        title="Chat on WhatsApp"
+        title="Chat with PEZA on WhatsApp"
+        aria-label="Chat with PEZA on WhatsApp at +260 570 230 160"
       >
         <MessageCircle className="w-6 h-6" />
       </a>

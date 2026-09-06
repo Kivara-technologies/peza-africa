@@ -61,15 +61,20 @@ export const orders = pgTable("orders", {
   shipping: numeric("shipping").notNull(),
   discount: numeric("discount").notNull().default("0"),
   total: numeric("total").notNull(),
-  paymentMethod: text("payment_method").notNull(),
-  status: text("status").notNull().default("pending"), // pending|processing|shipped|delivered|cancelled
+  paymentMethod: text("payment_method").notNull(), // AIRTEL | MTN | ZAMTEL | WALLET
+  paymentReference: text("payment_reference"), // provider transaction ref, set once a webhook confirms payment
+  deliveryAddress: text("delivery_address").notNull().default(""),
+  deliveryPhone: text("delivery_phone").notNull().default(""),
+  deliveryLat: numeric("delivery_lat"),
+  deliveryLng: numeric("delivery_lng"),
+  status: text("status").notNull().default("pending"), // pending|paid|processing|shipped|delivered|cancelled
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
-  productId: integer("product_id").notNull(),
+  productId: integer("product_id").notNull().references(() => products.id),
   productName: text("product_name").notNull(),
   productImage: text("product_image"),
   price: numeric("price").notNull(),
@@ -78,12 +83,18 @@ export const orderItems = pgTable("order_items", {
 });
 
 // ── Wallet ───────────────────────────────────────────────────────────
+// status gates whether a transaction counts toward the balance: a top-up
+// starts "pending" and only becomes "completed" once the mobile money
+// provider's webhook confirms the charge actually happened. Never flip this
+// to "completed" from a user-facing mutation.
 export const walletTransactions = pgTable("wallet_transactions", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
   amount: numeric("amount").notNull(), // positive = credit, negative = debit
   type: text("type").notNull(), // "topup" | "payment" | "refund"
-  provider: text("provider"), // M-Pesa | Airtel | MTN
+  status: text("status").notNull().default("completed"), // "pending" | "completed" | "failed"
+  provider: text("provider"), // Airtel Money | MTN MoMo | Zamtel Kwacha
+  providerReference: text("provider_reference"), // provider's transaction id, for webhook reconciliation
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

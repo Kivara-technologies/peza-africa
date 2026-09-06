@@ -3,10 +3,13 @@ import { cors } from "hono/cors";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router.js";
 import { createContext } from "./trpc.js";
+import { paymentWebhookRoutes } from "./routers/paymentWebhook.js";
 
 export const app = new Hono().basePath("/api");
 
 app.use("/*", cors());
+
+app.route("/webhooks", paymentWebhookRoutes);
 
 app.all("/trpc/*", (c) => {
   return fetchRequestHandler({

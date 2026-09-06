@@ -4,7 +4,7 @@ import { ChevronRight, Zap, TrendingUp, Briefcase, Factory, ArrowRight } from "l
 import { trpc } from "@/providers/trpc";
 import PremiumProductCard from "@/components/PremiumProductCard";
 
-const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "M-Pesa", "Airtel", "MTN", "Unilever"];
+const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "Zamtel", "Airtel", "MTN", "Unilever"];
 
 export default function Home() {
   const navigate = useNavigate();

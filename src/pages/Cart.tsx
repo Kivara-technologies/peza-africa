@@ -8,21 +8,30 @@ import { toast } from "sonner";
 export default function Cart() {
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "airtel" | "mtn" | "wallet">("mpesa");
+  const [paymentMethod, setPaymentMethod] = useState<"AIRTEL" | "MTN" | "ZAMTEL" | "WALLET">("AIRTEL");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
 
   const createOrder = trpc.order.create.useMutation({
     onSuccess: () => {
-      toast.success("Order placed successfully!");
+      toast.success(
+        paymentMethod === "WALLET"
+          ? "Order placed and paid from your wallet!"
+          : "Order placed — approve the payment prompt on your phone to confirm.",
+      );
       clearCart();
       navigate("/orders");
     },
-    onError: () => {
-      toast.error("Failed to place order. Please try again.");
+    onError: (err) => {
+      toast.error(err.message || "Failed to place order. Please try again.");
       setCheckingOut(false);
     },
   });
 
+  // Shown for the shopper's convenience only — the server recomputes every
+  // price and total from the database, so this display total is never what
+  // actually gets charged.
   const shipping = count > 0 ? 150 : 0;
   const grandTotal = total + shipping;
 
@@ -30,23 +39,23 @@ export default function Cart() {
 
   const handleCheckout = () => {
     if (items.length === 0) return;
+    if (deliveryAddress.trim().length < 5) {
+      toast.error("Please enter a delivery address");
+      return;
+    }
+    if (deliveryPhone.trim().length < 6) {
+      toast.error("Please enter a contact phone number");
+      return;
+    }
     setCheckingOut(true);
 
-    const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
     createOrder.mutate({
-      orderNumber,
-      subtotal: String(total),
-      shipping: String(shipping),
-      discount: "0",
-      total: String(grandTotal),
-      paymentMethod: paymentMethod.toUpperCase(),
+      paymentMethod,
+      deliveryAddress: deliveryAddress.trim(),
+      deliveryPhone: deliveryPhone.trim(),
       items: items.map((item) => ({
         productId: item.productId,
-        productName: item.name,
-        productImage: item.image,
-        price: String(item.price),
         quantity: item.quantity,
-        total: String(item.price * item.quantity),
       })),
     });
   };
@@ -131,6 +140,24 @@ export default function Cart() {
         {/* Order Summary */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-peza-cream-dark p-5">
+            <h2 className="text-lg font-bold text-peza-brown mb-4">Delivery Details</h2>
+            <div className="space-y-3 mb-5">
+              <input
+                type="text"
+                placeholder="Delivery address (area, street, landmark)"
+                className="w-full border-2 border-peza-cream-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-peza-orange transition-colors"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+              />
+              <input
+                type="tel"
+                placeholder="Contact phone number"
+                className="w-full border-2 border-peza-cream-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-peza-orange transition-colors"
+                value={deliveryPhone}
+                onChange={(e) => setDeliveryPhone(e.target.value)}
+              />
+            </div>
+
             <h2 className="text-lg font-bold text-peza-brown mb-4">Order Summary</h2>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -149,6 +176,7 @@ export default function Cart() {
                 <span className="font-bold text-peza-brown">Total</span>
                 <span className="font-extrabold text-peza-orange text-lg">{fmtK(grandTotal)}</span>
               </div>
+              <p className="text-[11px] text-gray-400">Final total is confirmed by the server at checkout.</p>
             </div>
 
             {/* Payment Methods */}
@@ -156,10 +184,10 @@ export default function Cart() {
               <h3 className="text-sm font-bold text-peza-brown mb-3">Payment Method</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { key: "mpesa" as const, label: "M-Pesa" },
-                  { key: "airtel" as const, label: "Airtel" },
-                  { key: "mtn" as const, label: "MTN" },
-                  { key: "wallet" as const, label: "Wallet" },
+                  { key: "AIRTEL" as const, label: "Airtel Money" },
+                  { key: "MTN" as const, label: "MTN MoMo" },
+                  { key: "ZAMTEL" as const, label: "Zamtel Kwacha" },
+                  { key: "WALLET" as const, label: "Wallet" },
                 ].map((m) => (
                   <button
                     key={m.key}
@@ -170,6 +198,11 @@ export default function Cart() {
                   </button>
                 ))}
               </div>
+              {paymentMethod !== "WALLET" && (
+                <p className="text-[11px] text-gray-400 mt-2">
+                  You'll get a payment prompt on your phone to approve after placing the order.
+                </p>
+              )}
             </div>
 
             <button

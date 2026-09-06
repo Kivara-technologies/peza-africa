@@ -33,7 +33,7 @@ export default function Login() {
         if (error) throw error;
         toast.success("Account created! Check your email if confirmation is required.");
       }
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
