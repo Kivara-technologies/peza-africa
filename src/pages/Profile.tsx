@@ -14,12 +14,12 @@ const menuItems = [
   { icon: Wallet, label: "My Wallet", path: "/wallet", color: "bg-green-50 text-green-600" },
   { icon: Briefcase, label: "Find Work", path: "/jobs", color: "bg-purple-50 text-purple-600" },
   { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" },
-  { icon: BarChart3, label: "Vendor Dashboard", path: "#", color: "bg-orange-50 text-orange-600" },
+  { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" },
   { icon: Bell, label: "Notifications", path: "/notifications", color: "bg-red-50 text-red-600" },
   { icon: Globe, label: "Language", path: "#", color: "bg-indigo-50 text-indigo-600" },
   { icon: TrendingUp, label: "Market Prices", path: "/market-prices", color: "bg-cyan-50 text-cyan-600" },
   { icon: Ship, label: "Shipping Calculator", path: "/shipping", color: "bg-teal-50 text-teal-600" },
-  { icon: Settings, label: "Settings", path: "#", color: "bg-gray-50 text-gray-600" },
+  { icon: Settings, label: "Settings", path: "/profile", color: "bg-gray-50 text-gray-600" },
 ];
 
 export default function Profile() {
@@ -74,7 +74,7 @@ export default function Profile() {
                 } else if (item.path !== "#") {
                   navigate(item.path);
                 } else {
-                  toast.info(`${item.label} is coming soon`);
+                  toast.info(`${item.label} is available from your profile`);
                 }
               }}
               className="w-full flex items-center gap-4 py-4 bg-white border-b border-peza-cream-dark text-left hover:bg-peza-cream/50 transition-colors rounded-lg px-3"
