@@ -99,6 +99,36 @@ export const walletTransactions = pgTable("wallet_transactions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Rotating savings circles. Contributions are wallet debits and never client-authorized credits.
+export const chilimbaCircles = pgTable("chilimba_circles", {
+  id: serial("id").primaryKey(),
+  ownerId: uuid("owner_id").notNull().references(() => profiles.id),
+  name: text("name").notNull(),
+  contributionAmount: numeric("contribution_amount").notNull(),
+  cycleLength: integer("cycle_length").notNull(),
+  currentCycle: integer("current_cycle").notNull().default(1),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chilimbaMembers = pgTable("chilimba_members", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => profiles.id),
+  payoutPosition: integer("payout_position").notNull(),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+});
+
+export const chilimbaContributions = pgTable("chilimba_contributions", {
+  id: serial("id").primaryKey(),
+  circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
+  memberId: integer("member_id").notNull().references(() => chilimbaMembers.id),
+  cycle: integer("cycle").notNull(),
+  amount: numeric("amount").notNull(),
+  walletTransactionId: integer("wallet_transaction_id").references(() => walletTransactions.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── Suppliers ────────────────────────────────────────────────────────
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
