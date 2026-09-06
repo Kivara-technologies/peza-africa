@@ -37,4 +37,9 @@ export const jobRouter = router({
         .returning();
       return application;
     }),
+
+  create: protectedProcedure.input(z.object({ title: z.string().min(2), company: z.string().min(2), category: z.string().min(2), location: z.string().min(2), type: z.string().min(2), salary: z.string().min(1), description: z.string().min(10), requirements: z.array(z.string()).default([]) })).mutation(({ ctx, input }) => ctx.db.insert(schema.jobs).values({ ...input, postedBy: ctx.user.id, urgent: false }).returning()),
+  mine: protectedProcedure.query(({ ctx }) => ctx.db.select().from(schema.jobs).where(eq(schema.jobs.postedBy, ctx.user.id)).orderBy(desc(schema.jobs.postedAt))),
+  applications: protectedProcedure.input(z.object({ jobId: z.number().int().positive() })).query(({ ctx, input }) => ctx.db.select().from(schema.jobApplications).where(eq(schema.jobApplications.jobId, input.jobId))),
+  myApplications: protectedProcedure.query(({ ctx }) => ctx.db.select().from(schema.jobApplications).where(eq(schema.jobApplications.userId, ctx.user.id)).orderBy(desc(schema.jobApplications.id))),
 });

@@ -181,6 +181,7 @@ export const marketPrices = pgTable("market_prices", {
 // ── Jobs ───────────────────────────────────────────────���─────────────
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
+  postedBy: uuid("posted_by").references(() => profiles.id),
   title: text("title").notNull(),
   company: text("company").notNull(),
   category: text("category").notNull(),
