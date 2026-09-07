@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { ChevronRight, Zap, TrendingUp, Briefcase, Factory, ArrowRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import PremiumProductCard from "@/components/PremiumProductCard";
+import { getShopDestination } from "@/lib/shopNavigation";
+import { premiumBanners } from "@/data/premiumBanners";
 
 const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "Zamtel", "Airtel", "MTN", "Unilever"];
 
@@ -10,6 +12,15 @@ export default function Home() {
   const navigate = useNavigate();
   const [bannerIdx, setBannerIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState({ h: 7, m: 34, s: 22 });
+
+  const goToShop = () => {
+    const destination = getShopDestination();
+    if (destination.startsWith("http")) {
+      window.location.assign(destination);
+      return;
+    }
+    navigate(destination);
+  };
 
   const { data: categories } = trpc.category.list.useQuery();
   const { data: featured } = trpc.product.featured.useQuery();
@@ -35,10 +46,8 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  const banners = [
-    { image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=1200", title: "BUY. SELL. CONNECT.", subtitle: "Zambia's Commerce Platform" },
-    { image: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1200", title: "Flash Sale", subtitle: "Up to 50% off electronics" },
-  ];
+  const banners = premiumBanners;
+  const featuredBrands = ["Samsung", "Apple", "Nike", "Sony", "Bosch", "Dell", "HP", "Adidas", "Unilever", "Airtel", "MTN", "Zamtel"];
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -52,19 +61,37 @@ export default function Home() {
       </div>
 
       {/* Hero Banner */}
-      <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden h-[200px] sm:h-[280px] cursor-pointer" onClick={() => navigate("/shop")}>
+      <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden h-[220px] sm:h-[330px] cursor-pointer transition-transform duration-200 hover:scale-[1.01]" onClick={goToShop}>
         <img src={banners[bannerIdx].image} alt={banners[bannerIdx].title} className="w-full h-full object-cover transition-all duration-700" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
-          <h2 className="text-white text-2xl sm:text-3xl font-extrabold">{banners[bannerIdx].title}</h2>
-          <p className="text-white/80 text-sm mt-1">{banners[bannerIdx].subtitle}</p>
-          <span className="inline-flex items-center gap-1 bg-peza-gold text-peza-brown text-xs font-bold px-4 py-2 rounded-full mt-3 w-fit">
-            Shop Now <ArrowRight className="w-3 h-3" />
+        <div className={`absolute inset-0 bg-gradient-to-r ${banners[bannerIdx].accent} opacity-85`} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-amber-200 font-bold">Curated selection</p>
+          <h2 className="text-white text-2xl sm:text-4xl font-extrabold mt-2">{banners[bannerIdx].title}</h2>
+          <p className="text-white/85 text-sm sm:text-base mt-1 max-w-lg">{banners[bannerIdx].subtitle}</p>
+          <span className="inline-flex items-center gap-1 bg-white text-peza-brown text-xs font-bold px-4 py-2 rounded-full mt-4 w-fit shadow-lg">
+            {banners[bannerIdx].cta} <ArrowRight className="w-3 h-3" />
           </span>
         </div>
         <div className="absolute bottom-3 right-4 flex gap-2">
           {banners.map((_, i) => (
-            <div key={i} className={`h-2 rounded-full transition-all ${i === bannerIdx ? "w-6 bg-peza-orange" : "w-2 bg-white/50"}`} />
+            <div key={i} className={`h-2 rounded-full transition-all ${i === bannerIdx ? "w-6 bg-white" : "w-2 bg-white/45"}`} />
           ))}
+        </div>
+      </div>
+
+      <div className="px-4 mt-5">
+        <div className="rounded-2xl border border-peza-cream-dark bg-white p-3 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-peza-brown-light">World brands</p>
+            <button onClick={goToShop} className="text-peza-orange text-xs font-semibold">View all</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {featuredBrands.map((brand) => (
+              <span key={brand} className="rounded-full border border-peza-cream-dark bg-peza-cream px-3 py-1.5 text-[11px] font-semibold text-peza-brown">
+                {brand}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -72,7 +99,7 @@ export default function Home() {
       <section className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold text-peza-brown">Shop by Category</h3>
-          <button onClick={() => navigate("/shop")} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
+          <button onClick={goToShop} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
             See all <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -123,7 +150,7 @@ export default function Home() {
             <TrendingUp className="w-5 h-5 text-peza-orange" />
             <h3 className="text-lg font-bold text-peza-brown">Trending Now</h3>
           </div>
-          <button onClick={() => navigate("/shop")} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
+          <button onClick={goToShop} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
             View all <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -153,7 +180,7 @@ export default function Home() {
       <section className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold text-peza-brown">Just For You</h3>
-          <button onClick={() => navigate("/shop")} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
+          <button onClick={goToShop} className="text-peza-orange text-sm font-semibold flex items-center gap-1">
             See more <ChevronRight className="w-4 h-4" />
           </button>
         </div>

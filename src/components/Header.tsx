@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Search, ShoppingCart, Bell, Wallet, Menu, X } from "lucide-react";
+import { Search, ShoppingCart, Bell, Wallet, Menu, X, Sparkles } from "lucide-react";
 import { useCart } from "@/App";
 import { trpc } from "@/providers/trpc";
 
@@ -24,9 +24,8 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-peza-brown border-b-2 border-peza-gold">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-peza-brown border-b-2 border-peza-gold shadow-[0_10px_30px_rgba(19,28,23,0.18)]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3">
-          {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate("/")}>
             <img src="/peza-icon.png" alt="PEZA" className="w-9 h-9 rounded-lg" />
             <span className="text-2xl font-extrabold tracking-tight hidden sm:block">
@@ -37,10 +36,9 @@ export default function Header() {
             </span>
           </div>
 
-          {/* Search Bar */}
           <div className="flex-1 max-w-xl">
             {searchOpen ? (
-              <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 border border-peza-gold/30">
+              <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 border border-peza-gold/30 shadow-inner">
                 <Search className="w-4 h-4 text-peza-gold" />
                 <input
                   autoFocus
@@ -67,7 +65,6 @@ export default function Header() {
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-1">
             <button
               className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors relative"
@@ -107,32 +104,43 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile Menu */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-peza-brown-dark pt-20 px-6 md:hidden animate-fade-in-up">
-          <div className="flex flex-col gap-4">
-            {[
-              { label: "Home", path: "/", icon: "🏠" },
-              { label: "Shop", path: "/shop", icon: "🏪" },
-              { label: "My Cart", path: "/cart", icon: "🛒" },
-              { label: "My Orders", path: "/orders", icon: "📦" },
-              { label: "My Wallet", path: "/wallet", icon: "💰" },
-              { label: "Messages", path: "/chat", icon: "💬" },
-              { label: "Find Work", path: "/jobs", icon: "💼" },
-              { label: "Suppliers Hub", path: "/suppliers", icon: "🏭" },
-              { label: "Market Prices", path: "/market-prices", icon: "📈" },
-              { label: "Shipping Calculator", path: "/shipping", icon: "🚢" },
-              { label: "My Profile", path: "/profile", icon: "👤" },
-            ].map((item) => (
-              <button
-                key={item.path}
-                className="flex items-center gap-4 py-3 border-b border-white/10 text-left"
-                onClick={() => { navigate(item.path); setMenuOpen(false); }}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-white font-medium text-lg">{item.label}</span>
-              </button>
-            ))}
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+            <div className="mb-4 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <img src="/peza-icon.png" alt="PEZA" className="w-8 h-8 rounded-lg" />
+                <span className="font-bold text-lg">Menu</span>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-peza-gold/10 text-peza-gold px-2 py-1 text-[10px] font-bold uppercase tracking-wide">
+                <Sparkles className="w-3 h-3" /> Top
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {[
+                { label: "Home", path: "/", icon: "🏠" },
+                { label: "Shop", path: "/shop", icon: "🏪" },
+                { label: "My Cart", path: "/cart", icon: "🛒" },
+                { label: "My Orders", path: "/orders", icon: "📦" },
+                { label: "My Wallet", path: "/wallet", icon: "💰" },
+                { label: "Messages", path: "/chat", icon: "💬" },
+                { label: "Find Work", path: "/jobs", icon: "💼" },
+                { label: "Suppliers Hub", path: "/suppliers", icon: "🏭" },
+                { label: "Market Prices", path: "/market-prices", icon: "📈" },
+                { label: "Shipping Calculator", path: "/shipping", icon: "🚢" },
+                { label: "My Profile", path: "/profile", icon: "👤" },
+              ].map((item) => (
+                <button
+                  key={item.path}
+                  className="flex items-center gap-4 py-3 px-2 rounded-xl border border-white/10 bg-white/5 text-left hover:bg-white/10 transition-colors"
+                  onClick={() => { navigate(item.path); setMenuOpen(false); }}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-white font-medium text-lg">{item.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

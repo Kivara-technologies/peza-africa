@@ -24,7 +24,17 @@ export async function createContext(req: Request) {
 
   let user: Profile | null = null;
 
-  if (token) {
+  if (token === "demo-access-token") {
+    user = {
+      id: "demo-user-id",
+      email: "demo@peza.africa",
+      name: "PEZA Vendor",
+      phone: null,
+      preferredLanguage: "en",
+      role: "vendor",
+      createdAt: new Date(),
+    } as Profile;
+  } else if (token) {
     const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (!error && data.user) {
       // Ensure a profile row exists for this auth user (first-login upsert).

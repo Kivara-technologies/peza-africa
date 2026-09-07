@@ -37,7 +37,7 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: { id: number; name: string; price: string | number; image: string; vendor: string }) => void;
+  addItem: (product: { id: number; name: string; price: string | number; image: string; vendor: string }, quantity?: number) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, qty: number) => void;
   clearCart: () => void;
@@ -47,10 +47,10 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType>({
   items: [],
-  addItem: () => {},
-  removeItem: () => {},
-  updateQuantity: () => {},
-  clearCart: () => {},
+  addItem: () => { },
+  removeItem: () => { },
+  updateQuantity: () => { },
+  clearCart: () => { },
   count: 0,
   total: 0,
 });
@@ -67,13 +67,15 @@ export default function App() {
     localStorage.setItem("peza_cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addItem = (product: { id: number; name: string; price: string | number; image: string; vendor: string }) => {
+  const addItem = (product: { id: number; name: string; price: string | number; image: string; vendor: string }, quantity = 1) => {
     const priceNum = typeof product.price === "string" ? parseFloat(product.price) : product.price;
+    const normalizedQty = Math.max(1, quantity);
+
     setCartItems((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.productId === product.id ? { ...item, quantity: item.quantity + normalizedQty } : item
         );
       }
       const newItem: CartItem = {
@@ -82,10 +84,10 @@ export default function App() {
         name: product.name,
         price: priceNum,
         image: product.image,
-        quantity: 1,
+        quantity: normalizedQty,
         vendor: product.vendor,
       };
-      toast.success(`${product.name} added to cart!`);
+      toast.success(`${product.name} added to cart${normalizedQty > 1 ? ` (${normalizedQty})` : ""}!`);
       return [...prev, newItem];
     });
   };

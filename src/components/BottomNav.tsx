@@ -15,13 +15,12 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-peza-cream-dark shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-peza-cream-dark shadow-[0_-8px_26px_rgba(0,0,0,0.09)] pb-safe">
       <div className="max-w-7xl mx-auto flex items-center justify-around py-1 relative">
         {tabs.map((tab, i) => {
           const isActive = location.pathname === tab.path;
           const Icon = tab.icon;
 
-          // Insert WhatsApp FAB in the middle (after Categories)
           const whatsappFab = i === 2 && (
             <a
               key="whatsapp"
@@ -29,6 +28,7 @@ export default function BottomNav() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center -mt-6"
+              aria-label="Chat on WhatsApp"
             >
               <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 hover:bg-green-600 transition-all hover:scale-110">
                 <MessageCircle className="w-6 h-6" />
@@ -38,11 +38,11 @@ export default function BottomNav() {
           );
 
           return (
-            <>
+            <div key={tab.path} className="contents">
               <button
-                key={tab.path}
                 onClick={() => navigate(tab.path)}
                 className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-lg transition-all relative ${isActive ? "text-peza-orange" : "text-gray-400 hover:text-gray-600"}`}
+                aria-label={tab.label}
               >
                 <div className="relative">
                   <Icon className="w-5 h-5" />
@@ -60,7 +60,7 @@ export default function BottomNav() {
                 )}
               </button>
               {whatsappFab}
-            </>
+            </div>
           );
         })}
       </div>
