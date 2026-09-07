@@ -44,7 +44,7 @@ export const orderRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        paymentMethod: z.enum(["AIRTEL", "MTN", "ZAMTEL", "WALLET"]),
+        paymentMethod: z.enum(["AIRTEL", "MTN", "ZAMTEL", "WALLET", "CASH_ON_DELIVERY"]),
         deliveryAddress: z.string().min(5, "Enter a delivery address"),
         deliveryPhone: z.string().min(6, "Enter a contact phone number"),
         deliveryLat: z.number().optional(),
@@ -134,9 +134,8 @@ export const orderRouter = router({
             deliveryLat: input.deliveryLat?.toString(),
             deliveryLng: input.deliveryLng?.toString(),
             // Wallet debits happen immediately below, so that order is paid
-            // right away. Mobile money orders stay "pending" until a
-            // provider webhook confirms the charge (not yet wired to a live
-            // provider — see server/routers/paymentWebhook.ts).
+            // right away. Mobile money and COD orders remain pending until
+            // the order is confirmed by the payment/webhook flow or delivery.
             status: input.paymentMethod === "WALLET" ? "paid" : "pending",
           })
           .returning();

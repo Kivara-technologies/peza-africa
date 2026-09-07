@@ -179,6 +179,20 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const infobipMessages = pgTable("infobip_messages", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull().default("infobip"),
+  channel: text("channel").notNull().default("sms"), // sms | whatsapp
+  direction: text("direction").notNull().default("inbound"), // inbound | outbound
+  sender: text("sender"),
+  recipient: text("recipient"),
+  externalId: text("external_id"),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("received"),
+  payload: jsonb("payload"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── Chilimba (rotating savings circles) ─────────────────────────────
 // A group of members each contribute a fixed amount per round; the full
 // pot is paid out to one member per round, in join order, until every

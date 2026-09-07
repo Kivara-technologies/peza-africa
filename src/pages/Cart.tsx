@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export default function Cart() {
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState<"AIRTEL" | "MTN" | "ZAMTEL" | "WALLET">("AIRTEL");
+  const [paymentMethod, setPaymentMethod] = useState<"AIRTEL" | "MTN" | "ZAMTEL" | "WALLET" | "CASH_ON_DELIVERY">("AIRTEL");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryPhone, setDeliveryPhone] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
@@ -18,7 +18,9 @@ export default function Cart() {
       toast.success(
         paymentMethod === "WALLET"
           ? "Order placed and paid from your wallet!"
-          : "Order placed — approve the payment prompt on your phone to confirm.",
+          : paymentMethod === "CASH_ON_DELIVERY"
+            ? "Order placed — pay cash when your delivery arrives."
+            : "Order placed — approve the payment prompt on your phone to confirm.",
       );
       clearCart();
       navigate("/orders");
@@ -34,6 +36,7 @@ export default function Cart() {
   // actually gets charged.
   const shipping = count > 0 ? 150 : 0;
   const grandTotal = total + shipping;
+  const deliveryWindow = count > 0 ? "2-4 business days" : "Choose products";
 
   const fmtK = (p: number) => `K${p.toLocaleString()}`;
 
@@ -81,10 +84,18 @@ export default function Cart() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">
-        My Cart ({count} {count === 1 ? "item" : "items"})
-      </h1>
+    <div className="max-w-7xl mx-auto px-4 pb-8">
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-peza-orange">Cart</p>
+          <h1 className="text-2xl font-extrabold text-peza-brown mt-1">
+            My Cart ({count} {count === 1 ? "item" : "items"})
+          </h1>
+        </div>
+        <div className="rounded-full border border-peza-cream-dark bg-white px-3 py-1.5 text-xs font-semibold text-peza-brown-light">
+          Delivery ETA: {deliveryWindow}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Items */}
@@ -92,24 +103,32 @@ export default function Cart() {
           {items.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-xl border border-peza-cream-dark p-4 flex gap-4"
+              className="bg-white rounded-2xl border border-peza-cream-dark p-4 flex gap-4 shadow-sm hover:shadow-md transition-shadow"
             >
               <div
-                className="w-24 h-24 rounded-lg overflow-hidden bg-peza-cream flex-shrink-0 cursor-pointer"
+                className="w-24 h-24 rounded-xl overflow-hidden bg-peza-cream flex-shrink-0 cursor-pointer"
                 onClick={() => navigate(`/product/${item.productId}`)}
               >
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3
-                  className="text-sm font-semibold text-peza-brown line-clamp-2 cursor-pointer hover:text-peza-orange transition-colors"
-                  onClick={() => navigate(`/product/${item.productId}`)}
-                >
-                  {item.name}
-                </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <h3
+                    className="text-sm font-semibold text-peza-brown line-clamp-2 cursor-pointer hover:text-peza-orange transition-colors"
+                    onClick={() => navigate(`/product/${item.productId}`)}
+                  >
+                    {item.name}
+                  </h3>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-0.5">{item.vendor}</p>
-                <p className="text-lg font-bold text-peza-orange mt-1">{fmtK(item.price)}</p>
-                <div className="flex items-center justify-between mt-2">
+                <p className="text-lg font-bold text-peza-orange mt-2">{fmtK(item.price)}</p>
+                <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -125,12 +144,7 @@ export default function Cart() {
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-400 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <span className="text-xs font-semibold text-peza-brown-light">Subtotal {fmtK(item.price * item.quantity)}</span>
                 </div>
               </div>
             </div>
@@ -138,10 +152,23 @@ export default function Cart() {
         </div>
 
         {/* Order Summary */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-peza-cream-dark p-5">
-            <h2 className="text-lg font-bold text-peza-brown mb-4">Delivery Details</h2>
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <div className="bg-white rounded-2xl border border-peza-cream-dark p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-peza-brown">Order Summary</h2>
+              <span className="rounded-full bg-peza-green/10 text-peza-green px-2 py-1 text-[10px] font-bold uppercase tracking-wide">
+                Secure
+              </span>
+            </div>
+
             <div className="space-y-3 mb-5">
+              <div className="rounded-xl bg-peza-cream p-3 text-xs text-peza-brown-light">
+                <div className="flex items-center justify-between">
+                  <span>Delivery window</span>
+                  <span className="font-bold text-peza-brown">{deliveryWindow}</span>
+                </div>
+              </div>
+
               <input
                 type="text"
                 placeholder="Delivery address (area, street, landmark)"
@@ -158,8 +185,7 @@ export default function Cart() {
               />
             </div>
 
-            <h2 className="text-lg font-bold text-peza-brown mb-4">Order Summary</h2>
-            <div className="space-y-3">
+            <div className="space-y-3 border-t border-peza-cream-dark pt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-semibold text-peza-brown">{fmtK(total)}</span>
@@ -188,6 +214,7 @@ export default function Cart() {
                   { key: "MTN" as const, label: "MTN MoMo" },
                   { key: "ZAMTEL" as const, label: "Zamtel Kwacha" },
                   { key: "WALLET" as const, label: "Wallet" },
+                  { key: "CASH_ON_DELIVERY" as const, label: "Cash on Delivery" },
                 ].map((m) => (
                   <button
                     key={m.key}
@@ -198,21 +225,34 @@ export default function Cart() {
                   </button>
                 ))}
               </div>
-              {paymentMethod !== "WALLET" && (
+              {paymentMethod !== "WALLET" && paymentMethod !== "CASH_ON_DELIVERY" && (
                 <p className="text-[11px] text-gray-400 mt-2">
-                  You'll get a payment prompt on your phone to approve after placing the order.
+                  You’ll get a payment prompt on your phone to approve after placing the order.
+                </p>
+              )}
+              {paymentMethod === "CASH_ON_DELIVERY" && (
+                <p className="text-[11px] text-gray-400 mt-2">
+                  Cash on delivery is available for local orders. Pay the driver or delivery agent on arrival.
                 </p>
               )}
             </div>
 
-            <button
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              className="w-full mt-5 py-3.5 bg-peza-orange text-white rounded-xl font-bold text-sm hover:bg-peza-orange-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              {checkingOut ? "Processing..." : `Checkout - ${fmtK(grandTotal)}`}
-            </button>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => navigate("/shop")}
+                className="flex-1 py-3 border border-peza-orange text-peza-orange rounded-xl font-bold text-sm hover:bg-peza-orange/5 transition-colors"
+              >
+                Continue Shopping
+              </button>
+              <button
+                onClick={handleCheckout}
+                disabled={checkingOut}
+                className="flex-1 py-3 bg-peza-orange text-white rounded-xl font-bold text-sm hover:bg-peza-orange-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                {checkingOut ? "Processing..." : "Checkout"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
