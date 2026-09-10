@@ -2,10 +2,21 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
-import { Package, Wallet, Briefcase, Factory, Bell, Globe, TrendingUp, Ship, Settings, LogOut, ChevronRight, BarChart3, Users, ShieldCheck, Sparkles, Pencil, Bike } from "lucide-react";
+import { Package, Wallet, Briefcase, Factory, Bell, Globe, TrendingUp, Ship, Settings, LogOut, ChevronRight, BarChart3, ShieldCheck, Sparkles, Pencil, Bike, Globe2 } from "lucide-react";
 
 function getMenuItems(t: (key: TranslationKey) => string) { return [
-  { icon: Package, label: "My Orders", path: "/orders", color: "bg-blue-50 text-blue-600" }, { icon: Wallet, label: "My Wallet", path: "/wallet", color: "bg-green-50 text-green-600" }, { icon: Users, label: "Chilimba", path: "/chilimba", color: "bg-pink-50 text-pink-600" }, { icon: Briefcase, label: "Find Work", path: "/jobs", color: "bg-purple-50 text-purple-600" }, { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" }, { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" }, { icon: Bell, label: t("profile.menu.notifications"), path: "/notifications", color: "bg-red-50 text-red-600" }, { icon: Globe, label: t("profile.menu.language"), path: "/language", color: "bg-indigo-50 text-indigo-600" }, { icon: TrendingUp, label: t("profile.menu.market_prices"), path: "/market-prices", color: "bg-cyan-50 text-cyan-600" }, { icon: Ship, label: t("profile.menu.shipping_calculator"), path: "/shipping", color: "bg-teal-50 text-teal-600" }, { icon: Bike, label: t("profile.menu.rider_dashboard"), path: "/rider", color: "bg-lime-50 text-lime-600" }, { icon: Settings, label: t("profile.menu.settings"), path: "/settings", color: "bg-gray-50 text-gray-600" },
+  { icon: Package, label: "My Orders", path: "/orders", color: "bg-blue-50 text-blue-600" },
+  { icon: Wallet, label: "My Wallet", path: "/wallet", color: "bg-green-50 text-green-600" },
+  { icon: Globe2, label: "About Us", path: "/about", color: "bg-amber-50 text-amber-700" },
+  { icon: Briefcase, label: "Find Work", path: "/jobs", color: "bg-purple-50 text-purple-600" },
+  { icon: Factory, label: "Suppliers Hub", path: "/suppliers", color: "bg-amber-50 text-amber-600" },
+  { icon: BarChart3, label: "Vendor Dashboard", path: "/vendor", color: "bg-orange-50 text-orange-600" },
+  { icon: Bell, label: t("profile.menu.notifications"), path: "/notifications", color: "bg-red-50 text-red-600" },
+  { icon: Globe, label: t("profile.menu.language"), path: "/language", color: "bg-indigo-50 text-indigo-600" },
+  { icon: TrendingUp, label: t("profile.menu.market_prices"), path: "/market-prices", color: "bg-cyan-50 text-cyan-600" },
+  { icon: Ship, label: t("profile.menu.shipping_calculator"), path: "/shipping", color: "bg-teal-50 text-teal-600" },
+  { icon: Bike, label: t("profile.menu.rider_dashboard"), path: "/rider", color: "bg-lime-50 text-lime-600" },
+  { icon: Settings, label: t("profile.menu.settings"), path: "/settings", color: "bg-gray-50 text-gray-600" },
 ]; }
 
 export default function Profile() {
