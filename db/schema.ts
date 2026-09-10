@@ -11,20 +11,24 @@ import {
 } from "drizzle-orm/pg-core";
 
 // ── Profiles ─────────────────────────────────────────────────────────
-// One row per Supabase Auth user (id matches auth.users.id).
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(), // == auth.users.id
+  id: uuid("id").primaryKey(),
   name: text("name"),
   email: text("email"),
   phone: text("phone"),
-  preferredLanguage: text("preferred_language").notNull().default("en"), // en | bem | nya
-  role: text("role").notNull().default("customer"), // "customer" | "admin" | "rider"
+  avatarUrl: text("avatar_url"),
+  address: text("address"),
+  city: text("city"),
+  country: text("country").notNull().default("Zambia"),
+  businessName: text("business_name"),
+  businessType: text("business_type"),
+  businessDescription: text("business_description"),
+  website: text("website"),
+  preferredLanguage: text("preferred_language").notNull().default("en"),
+  role: text("role").notNull().default("customer"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Rider locations ──────────────────────────────────────────────────
-// One row per rider, upserted on every location ping while they're online.
-// Deliberately a separate table from profiles — see migration 0008 for why.
 export const riderLocations = pgTable("rider_locations", {
   riderId: uuid("rider_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
   lat: numeric("lat").notNull(),
@@ -39,6 +43,10 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   image: text("image"),
+  parentId: integer("parent_id").references(() => categories.id, { onDelete: "set null" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  description: text("description"),
 });
 
 export const products = pgTable("products", {
@@ -51,8 +59,8 @@ export const products = pgTable("products", {
   image: text("image").notNull(),
   realPhoto: text("real_photo"),
   categoryId: integer("category_id").references(() => categories.id),
-  categorySlug: text("category_slug"), // denormalized for fast filtering
-  vendorId: uuid("vendor_id").references(() => profiles.id), // owning seller, null = platform-seeded
+  categorySlug: text("category_slug"),
+  vendorId: uuid("vendor_id").references(() => profiles.id),
   vendor: text("vendor").notNull().default("PEZA Marketplace"),
   rating: numeric("rating").notNull().default("4.5"),
   reviewCount: integer("review_count").notNull().default(0),
@@ -64,7 +72,6 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Orders ───────────────────────────────────────────────────────────
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
@@ -73,14 +80,15 @@ export const orders = pgTable("orders", {
   shipping: numeric("shipping").notNull(),
   discount: numeric("discount").notNull().default("0"),
   total: numeric("total").notNull(),
-  paymentMethod: text("payment_method").notNull(), // AIRTEL | MTN | ZAMTEL | WALLET
-  paymentReference: text("payment_reference"), // provider transaction ref, set once a webhook confirms payment
+  paymentMethod: text("payment_method").notNull(),
+  paymentReference: text("payment_reference"),
   deliveryAddress: text("delivery_address").notNull().default(""),
   deliveryPhone: text("delivery_phone").notNull().default(""),
   deliveryLat: numeric("delivery_lat"),
   deliveryLng: numeric("delivery_lng"),
-  riderId: uuid("rider_id").references(() => profiles.id), // assigned once a rider claims the delivery
-  status: text("status").notNull().default("pending"), // pending|paid|processing|shipped|delivered|cancelled — "shipped" doubles as "out for delivery"
+  riderId: uuid("rider_id").references(() => profiles.id),
+  riderEarning: numeric("rider_earning").notNull().default("0"),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -95,24 +103,18 @@ export const orderItems = pgTable("order_items", {
   total: numeric("total").notNull(),
 });
 
-// ── Wallet ───────────────────────────────────────────────────────────
-// status gates whether a transaction counts toward the balance: a top-up
-// starts "pending" and only becomes "completed" once the mobile money
-// provider's webhook confirms the charge actually happened. Never flip this
-// to "completed" from a user-facing mutation.
 export const walletTransactions = pgTable("wallet_transactions", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
-  amount: numeric("amount").notNull(), // positive = credit, negative = debit
-  type: text("type").notNull(), // "topup" | "payment" | "refund" | "payout"
-  status: text("status").notNull().default("completed"), // "pending" | "completed" | "failed"
-  provider: text("provider"), // Airtel Money | MTN MoMo | Zamtel Kwacha
-  providerReference: text("provider_reference"), // provider's transaction id, for webhook reconciliation
+  amount: numeric("amount").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("completed"),
+  provider: text("provider"),
+  providerReference: text("provider_reference"),
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Suppliers ────────────────────────────────────────────────────────
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -127,10 +129,9 @@ export const suppliers = pgTable("suppliers", {
   category: text("category").notNull().default("All"),
 });
 
-// ── Market prices ────────────────────────────────────────────────────
 export const marketPrices = pgTable("market_prices", {
   id: serial("id").primaryKey(),
-  category: text("category").notNull(), // commodities | fuel | currency
+  category: text("category").notNull(),
   item: text("item").notNull(),
   price: text("price").notNull(),
   change: text("change").notNull().default("0%"),
@@ -138,14 +139,13 @@ export const marketPrices = pgTable("market_prices", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// ── Jobs ─────────────────────────────────────────────────────────────
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   company: text("company").notNull(),
   category: text("category").notNull(),
   location: text("location").notNull(),
-  type: text("type").notNull(), // Full-time | Part-time | Contract
+  type: text("type").notNull(),
   salary: text("salary").notNull(),
   description: text("description"),
   requirements: jsonb("requirements").$type<string[]>().default([]),
@@ -161,7 +161,6 @@ export const jobApplications = pgTable("job_applications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Chat ─────────────────────────────────────────────────────────────
 export const chats = pgTable("chats", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
@@ -180,11 +179,10 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Notifications ────────────────────────────────────────────────────
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
-  type: text("type").notNull().default("info"), // order|promo|payment|job|info
+  type: text("type").notNull().default("info"),
   title: text("title").notNull(),
   message: text("message").notNull(),
   read: boolean("read").notNull().default(false),
@@ -194,8 +192,8 @@ export const notifications = pgTable("notifications", {
 export const infobipMessages = pgTable("infobip_messages", {
   id: serial("id").primaryKey(),
   provider: text("provider").notNull().default("infobip"),
-  channel: text("channel").notNull().default("sms"), // sms | whatsapp
-  direction: text("direction").notNull().default("inbound"), // inbound | outbound
+  channel: text("channel").notNull().default("sms"),
+  direction: text("direction").notNull().default("inbound"),
   sender: text("sender"),
   recipient: text("recipient"),
   externalId: text("external_id"),
@@ -205,22 +203,16 @@ export const infobipMessages = pgTable("infobip_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Chilimba (rotating savings circles) ─────────────────────────────
-// A group of members each contribute a fixed amount per round; the full
-// pot is paid out to one member per round, in join order, until every
-// member has been paid once. Money only ever moves between members'
-// existing wallet balances (wallet_transactions) — Chilimba never
-// creates or destroys money on its own.
 export const chilimbaCircles = pgTable("chilimba_circles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   contributionAmount: numeric("contribution_amount").notNull(),
-  frequencyDays: integer("frequency_days").notNull().default(7), // 7 = weekly, 30 = monthly
+  frequencyDays: integer("frequency_days").notNull().default(7),
   maxMembers: integer("max_members").notNull(),
   creatorId: uuid("creator_id").notNull().references(() => profiles.id),
-  status: text("status").notNull().default("recruiting"), // recruiting | active | completed
-  currentRound: integer("current_round").notNull().default(0), // 0 until full and active
+  status: text("status").notNull().default("recruiting"),
+  currentRound: integer("current_round").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -228,7 +220,7 @@ export const chilimbaMembers = pgTable("chilimba_members", {
   id: serial("id").primaryKey(),
   circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => profiles.id),
-  payoutPosition: integer("payout_position").notNull(), // join order = payout order, 1-indexed
+  payoutPosition: integer("payout_position").notNull(),
   hasBeenPaid: boolean("has_been_paid").notNull().default(false),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
@@ -242,10 +234,6 @@ export const chilimbaContributions = pgTable("chilimba_contributions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── Admin audit log ──────────────────────────────────────────────────
-// Minimal (actor, action, target, detail) trail. Written by admin-only
-// mutations (order.confirmOrder, rider.becomeRider, product create) so
-// there's a record of who did what, per the P2 audit item.
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: serial("id").primaryKey(),
   actorId: uuid("actor_id").notNull().references(() => profiles.id),
