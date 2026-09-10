@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { timingSafeEqual } from "node:crypto";
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, like, or, sql } from "drizzle-orm";
 import { db, schema } from "../../db/index.js";
 
 function secretsMatch(provided: string | undefined | null, expected: string): boolean {
@@ -51,16 +51,47 @@ paymentWebhookRoutes.post("/mobile-money", async (c) => {
   const providedSecret = c.req.header("x-webhook-secret"); if (!secretsMatch(providedSecret, configuredSecret)) return c.json({ error: "Invalid signature" }, 401);
 
   const reference = String(body.reference);
-  // Primary marketplace path: checkout stores orderNumber in paymentReference
-  // for mobile-money orders, so a successful provider callback can settle the order.
+  // Marketplace mobile-money checkout reserves inventory while the order is pending.
+  // Settle the state transition and, on a provider failure, release that reservation in
+  // the same database transaction. The pending -> terminal-state conditional update is
+  // the idempotency guard: duplicate callbacks cannot restore stock twice.
   const [order] = await db.select().from(schema.orders).where(eq(schema.orders.paymentReference, reference)).limit(1);
   if (order) {
     if (order.paymentMethod !== "AIRTEL" && order.paymentMethod !== "MTN" && order.paymentMethod !== "ZAMTEL") return c.json({ error: "Payment reference is not a mobile-money order" }, 400);
     if (order.status === "paid" || order.status === "processing" || order.status === "shipped" || order.status === "delivered") return c.json({ ok: true, note: "order already settled" });
-    const nextStatus = String(body.status).toUpperCase() === "SUCCESS" ? "processing" : "failed";
-    const [updated] = await db.update(schema.orders).set({ status: nextStatus }).where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "pending"))).returning();
-    if (updated && nextStatus === "processing") await db.insert(schema.notifications).values({ userId: order.userId, type: "order", title: "Payment confirmed", message: `Payment for order ${order.orderNumber} has been confirmed. It's ready for delivery.` });
-    return c.json({ ok: true, orderId: order.id, status: updated?.status ?? nextStatus });
+    const succeeded = String(body.status).toUpperCase() === "SUCCESS";
+    const nextStatus = succeeded ? "processing" : "failed";
+
+    const result = await db.transaction(async (tx) => {
+      const [updated] = await tx.update(schema.orders)
+        .set({ status: nextStatus })
+        .where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "pending")))
+        .returning();
+
+      if (!updated) return { updated: false as const };
+
+      if (!succeeded) {
+        const items = await tx.select({ productId: schema.orderItems.productId, quantity: schema.orderItems.quantity })
+          .from(schema.orderItems)
+          .where(eq(schema.orderItems.orderId, order.id));
+        for (const item of items) {
+          await tx.update(schema.products)
+            .set({ stock: sql`${schema.products.stock} + ${item.quantity}` })
+            .where(eq(schema.products.id, item.productId));
+        }
+      } else {
+        await tx.insert(schema.notifications).values({
+          userId: order.userId,
+          type: "order",
+          title: "Payment confirmed",
+          message: `Payment for order ${order.orderNumber} has been confirmed. It's ready for delivery.`,
+        });
+      }
+
+      return { updated: true as const, status: updated.status };
+    });
+
+    return c.json({ ok: true, orderId: order.id, status: result.status ?? order.status, alreadySettled: !result.updated });
   }
 
   // Backward-compatible wallet transaction path for provider callbacks created by older integrations.
