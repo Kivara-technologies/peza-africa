@@ -1,12 +1,10 @@
 import { z } from "zod";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, and, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
 import { schema } from "../../db/index.js";
 
-const productInput = z.object({
-  name: z.string().min(1, "Product name is required"), description: z.string().optional(), price: z.number().positive("Price must be greater than 0"), comparePrice: z.number().positive().optional(), image: z.string().url("Image must be a valid URL"), categorySlug: z.string().min(1, "Category is required"), whatsappNumber: z.string().optional(), laybyMonths: z.number().int().positive().optional(), stock: z.number().int().min(0).default(10),
-});
+const productInput = z.object({ name: z.string().min(1, "Product name is required"), description: z.string().optional(), price: z.number().positive("Price must be greater than 0"), comparePrice: z.number().positive().optional(), image: z.string().url("Image must be a valid URL"), categorySlug: z.string().min(1, "Category is required"), whatsappNumber: z.string().optional(), laybyMonths: z.number().int().positive().optional(), stock: z.number().int().min(0).default(10) });
 const SALES_STATUSES = ["paid", "processing", "shipped", "delivered"] as const;
 
 export const vendorRouter = router({
@@ -19,8 +17,7 @@ export const vendorRouter = router({
     return created;
   }),
   updateProduct: protectedProcedure.input(productInput.partial().extend({ id: z.number() })).mutation(async ({ ctx, input }) => {
-    const { id, ...rest } = input;
-    const [existing] = await ctx.db.select().from(schema.products).where(eq(schema.products.id, id)).limit(1);
+    const { id, ...rest } = input; const [existing] = await ctx.db.select().from(schema.products).where(eq(schema.products.id, id)).limit(1);
     if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
     if (existing.vendorId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only edit your own products" });
     let categoryId = existing.categoryId;
@@ -31,14 +28,12 @@ export const vendorRouter = router({
     const [existing] = await ctx.db.select().from(schema.products).where(eq(schema.products.id, input.id)).limit(1);
     if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
     if (existing.vendorId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only delete your own products" });
-    await ctx.db.delete(schema.products).where(eq(schema.products.id, input.id));
-    return { success: true };
+    await ctx.db.delete(schema.products).where(eq(schema.products.id, input.id)); return { success: true };
   }),
   salesSummary: protectedProcedure.query(async ({ ctx }) => {
-    const myProducts = await ctx.db.select({ id: schema.products.id }).from(schema.products).where(eq(schema.products.vendorId, ctx.user.id));
-    const productIds = myProducts.map((p) => p.id);
+    const myProducts = await ctx.db.select({ id: schema.products.id }).from(schema.products).where(eq(schema.products.vendorId, ctx.user.id)); const productIds = myProducts.map((p) => p.id);
     if (productIds.length === 0) return { totalRevenue: 0, unitsSold: 0, ordersCount: 0, productCount: 0 };
-    const [summary] = await ctx.db.select({ totalRevenue: sql<string>`coalesce(sum(${schema.orderItems.total}), 0)`, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}), 0)`, ordersCount: sql<string>`count(distinct ${schema.orderItems.orderId})` }).from(schema.orderItems).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${inArray(schema.orderItems.productId, productIds)} and ${inArray(schema.orders.status, SALES_STATUSES)}`);
+    const [summary] = await ctx.db.select({ totalRevenue: sql<string>`coalesce(sum(${schema.orderItems.total}), 0)`, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}), 0)`, ordersCount: sql<string>`count(distinct ${schema.orderItems.orderId})` }).from(schema.orderItems).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(and(inArray(schema.orderItems.productId, productIds), inArray(schema.orders.status, SALES_STATUSES)));
     return { totalRevenue: Number(summary?.totalRevenue ?? 0), unitsSold: Number(summary?.unitsSold ?? 0), ordersCount: Number(summary?.ordersCount ?? 0), productCount: productIds.length };
   }),
   inventory: protectedProcedure.query(async ({ ctx }) => {
@@ -46,7 +41,7 @@ export const vendorRouter = router({
     return { totalUnits: rows.reduce((sum, p) => sum + p.stock, 0), lowStock: rows.filter((p) => p.stock <= 5), products: rows };
   }),
   topProducts: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.db.select({ productId: schema.orderItems.productId, productName: schema.orderItems.productName, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}),0)`, revenue: sql<string>`coalesce(sum(${schema.orderItems.total}),0)` }).from(schema.orderItems).innerJoin(schema.products, eq(schema.products.id, schema.orderItems.productId)).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${eq(schema.products.vendorId, ctx.user.id)} and ${inArray(schema.orders.status, SALES_STATUSES)}`).groupBy(schema.orderItems.productId, schema.orderItems.productName).orderBy(desc(sql`sum(${schema.orderItems.total})`)).limit(5);
+    const rows = await ctx.db.select({ productId: schema.orderItems.productId, productName: schema.orderItems.productName, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}),0)`, revenue: sql<string>`coalesce(sum(${schema.orderItems.total}),0)` }).from(schema.orderItems).innerJoin(schema.products, eq(schema.products.id, schema.orderItems.productId)).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(and(eq(schema.products.vendorId, ctx.user.id), inArray(schema.orders.status, SALES_STATUSES))).groupBy(schema.orderItems.productId, schema.orderItems.productName).orderBy(desc(sql`sum(${schema.orderItems.total})`)).limit(5);
     return rows.map((p) => ({ ...p, unitsSold: Number(p.unitsSold), revenue: Number(p.revenue) }));
   }),
 });
