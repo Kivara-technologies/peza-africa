@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Bike, MapPin, Package, CheckCircle2, Loader2, Wallet, Navigation, History, ChevronRight } from "lucide-react";
+import { Bike, MapPin, Package, CheckCircle2, Loader2, Wallet, Navigation, History, ChevronRight, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 
 const money = (v: string | number) => `K${Number(v || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function RiderDashboard() {
-  const { user, refresh } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, session, isLoading: authLoading, error: authError, refresh } = useAuth({ redirectOnUnauthenticated: true });
   const utils = trpc.useUtils();
   const [sharingLocation, setSharingLocation] = useState(false);
   const [tab, setTab] = useState<"home" | "history">("home");
@@ -49,6 +49,33 @@ export default function RiderDashboard() {
     );
     setSharingLocation(true); toast.success("You're online — customers can track your live trip.");
   };
+
+  // Never render the onboarding screen while Supabase/session/profile state is still resolving.
+  // This prevents the rider dashboard from appearing stuck or incorrectly showing "Become a Rider".
+  if (authLoading) return (
+    <div className="min-h-screen bg-[#f7f7f5] px-4 py-12">
+      <div className="max-w-md mx-auto bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-peza-orange/10 flex items-center justify-center mx-auto mb-4">
+          <Bike className="w-8 h-8 text-peza-orange animate-pulse" />
+        </div>
+        <h1 className="text-xl font-extrabold text-peza-brown">Loading your rider account</h1>
+        <p className="text-sm text-gray-500 mt-2">Securing your session and loading your delivery workspace…</p>
+        <div className="mt-5 h-1.5 rounded-full bg-gray-100 overflow-hidden"><div className="h-full w-1/2 bg-peza-orange rounded-full animate-pulse" /></div>
+      </div>
+    </div>
+  );
+
+  // An authenticated session with an unavailable profile should be recoverable, not treated as a new rider.
+  if (session && !user && authError) return (
+    <div className="min-h-screen bg-[#f7f7f5] px-4 py-12">
+      <div className="max-w-md mx-auto bg-white rounded-3xl border border-red-100 shadow-sm p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4"><Bike className="w-8 h-8 text-red-500" /></div>
+        <h1 className="text-xl font-extrabold text-peza-brown">Rider account could not load</h1>
+        <p className="text-sm text-gray-500 mt-2">Your sign-in is still active. We couldn't load your PEZA profile yet.</p>
+        <button onClick={() => refresh()} className="mt-5 inline-flex items-center justify-center gap-2 w-full py-3 bg-peza-orange text-white rounded-xl font-bold text-sm"><RefreshCw className="w-4 h-4" /> Try again</button>
+      </div>
+    </div>
+  );
 
   if (!isRider) return (
     <div className="max-w-md mx-auto px-4 pt-10 text-center">
