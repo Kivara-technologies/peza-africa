@@ -25,6 +25,7 @@ export function useAuth(options?: UseAuthOptions) {
     error,
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
+    enabled: !sessionLoading && !!session,
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
@@ -59,7 +60,6 @@ export function useAuth(options?: UseAuthOptions) {
       if (!mounted) return;
       setSession(data.session ?? null);
       setSessionLoading(false);
-      void refetch();
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
