@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { LogIn, ChevronLeft, UserRound, Store } from "lucide-react";
+import { LogIn, ChevronLeft, UserRound, Store, Camera } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 export default function Settings() {
@@ -21,7 +21,7 @@ export default function Settings() {
   }, [user]);
 
   const updateMutation = trpc.auth.updateProfile.useMutation({
-    onSuccess: () => { toast.success("Profile updated"); utils.auth.me.invalidate(); },
+    onSuccess: () => { toast.success("Profile updated successfully"); utils.auth.me.invalidate(); },
     onError: (err) => toast.error(err.message || "Couldn't update profile"),
   });
   const set = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
@@ -31,10 +31,17 @@ export default function Settings() {
   return (
     <div className="max-w-2xl mx-auto px-4 pb-10">
       <button onClick={() => navigate("/profile")} className="flex items-center gap-1 text-sm text-gray-500 mb-4"><ChevronLeft className="w-4 h-4" /> {t("settings.back")}</button>
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">Profile & business settings</h1>
+      <h1 className="text-2xl font-extrabold text-peza-brown mb-1">Profile & business settings</h1>
+      <p className="text-sm text-gray-500 mb-4">Keep your customer, seller and delivery details up to date.</p>
 
       <div className="bg-white rounded-2xl border border-peza-cream-dark p-4 space-y-4">
         <div className="flex items-center gap-2 font-bold text-peza-brown"><UserRound className="w-5 h-5 text-peza-orange" /> Personal profile</div>
+        <div className="flex items-center gap-4 rounded-2xl bg-peza-cream/60 p-4">
+          <div className="w-20 h-20 shrink-0 rounded-full overflow-hidden bg-white border-2 border-peza-cream-dark flex items-center justify-center text-2xl font-extrabold text-peza-orange">
+            {form.avatarUrl ? <img src={form.avatarUrl} alt="Profile preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <Camera className="w-7 h-7" />}
+          </div>
+          <div className="min-w-0"><p className="text-sm font-bold text-peza-brown">Profile photo</p><p className="text-xs text-gray-500 mt-1">Use a secure image URL. For production uploads, store images in Supabase Storage and paste the public object URL here.</p></div>
+        </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="text-xs text-gray-500">Full name<input value={form.name} onChange={(e) => set("name", e.target.value)} className="mt-1 w-full border border-peza-cream-dark rounded-lg px-3 py-2 text-sm" /></label>
           <label className="text-xs text-gray-500">Phone<input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="097..." className="mt-1 w-full border border-peza-cream-dark rounded-lg px-3 py-2 text-sm" /></label>
