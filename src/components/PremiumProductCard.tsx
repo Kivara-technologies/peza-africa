@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, MessageCircle, ShoppingCart, Star } from "lucide-react";
+import { Eye, EyeOff, MessageCircle, ShoppingCart, Star, Truck } from "lucide-react";
 import { useCart } from "@/App";
 
 interface Product {
@@ -47,7 +47,7 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
 
   return (
     <div
-      className={`bg-white rounded-xl border border-peza-cream-dark overflow-hidden cursor-pointer hover:shadow-peza transition-all hover:-translate-y-1 group ${variant === "horizontal" ? "flex gap-3" : ""}`}
+      className={`bg-white rounded-2xl border border-peza-cream-dark overflow-hidden cursor-pointer hover:shadow-peza transition-all hover:-translate-y-1 group ${variant === "horizontal" ? "flex gap-3" : ""}`}
       onClick={() => navigate(`/product/${product.id}`)}
     >
       {/* Image */}
@@ -58,7 +58,6 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
           className={`w-full h-full object-cover transition-all duration-500 ${showReal ? "grayscale-0" : ""}`}
         />
 
-        {/* Real Photo Toggle */}
         {product.realPhoto && (
           <button
             onClick={(e) => { e.stopPropagation(); setShowReal(!showReal); }}
@@ -69,7 +68,6 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
           </button>
         )}
 
-        {/* Real Photo Badge */}
         {showReal && product.realPhoto && (
           <span className="absolute top-2 left-2 bg-peza-green text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-fade-in-up">
             ✓ REAL PHOTO
@@ -78,30 +76,35 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
 
         {d > 0 && !showReal && (
           <span className="absolute top-2 left-2 bg-gradient-to-r from-peza-orange to-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {d}%
+            {d}% OFF
           </span>
         )}
       </div>
 
-      {/* Info */}
       <div className={`p-3 flex flex-col ${variant === "horizontal" ? "flex-1 py-2" : ""}`}>
-        <p className="text-xs font-semibold text-peza-brown line-clamp-2 leading-tight">{product.name}</p>
+        <p className="text-xs font-semibold text-peza-brown line-clamp-2 leading-tight min-h-[2.4em]">{product.name}</p>
 
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm font-bold text-peza-orange">{fmtK(product.price)}</span>
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="text-base font-extrabold text-peza-orange">{fmtK(product.price)}</span>
           {product.comparePrice && (
             <span className="text-[10px] text-gray-400 line-through">{fmtK(product.comparePrice)}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-1 mt-0.5">
-          <Star className="w-3 h-3 fill-peza-gold text-peza-gold" />
-          <span className="text-[10px] text-gray-500">{product.rating} ({product.reviewCount})</span>
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-1">
+            <Star className="w-3 h-3 fill-peza-gold text-peza-gold" />
+            <span className="text-[10px] font-semibold text-gray-600">{product.rating}</span>
+            <span className="text-[10px] text-gray-400">({product.reviewCount})</span>
+          </div>
+          <div className="inline-flex items-center gap-1 text-[10px] font-medium text-peza-green">
+            <Truck className="w-3 h-3" />
+            Delivery
+          </div>
         </div>
 
-        {/* Chilimba Badge */}
         {monthly > 0 && (
-          <div className="mt-1.5 bg-purple-50 border border-purple-100 rounded-lg px-2 py-1 flex items-center gap-1">
+          <div className="mt-2 bg-purple-50 border border-purple-100 rounded-lg px-2 py-1 flex items-center gap-1">
             <span className="text-[10px]">💳</span>
             <span className="text-[10px] font-semibold text-purple-700">
               Chilimba: K{monthly.toLocaleString()}/mo × {product.laybyMonths}mo
@@ -109,17 +112,16 @@ export default function PremiumProductCard({ product, variant = "grid" }: Props)
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-2 mt-3">
           <button
             onClick={(e) => { e.stopPropagation(); addItem(product); }}
-            className="flex-1 py-1.5 bg-peza-orange text-white text-[10px] font-bold rounded-lg hover:bg-peza-orange-dark transition-colors flex items-center justify-center gap-1"
+            className="flex-1 py-2 bg-peza-orange text-white text-[10px] font-bold rounded-lg hover:bg-peza-orange-dark transition-colors flex items-center justify-center gap-1"
           >
             <ShoppingCart className="w-3 h-3" /> Add
           </button>
           <button
             onClick={handleWhatsApp}
-            className="px-3 py-1.5 bg-green-500 text-white text-[10px] font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-1"
+            className="px-3 py-2 bg-green-500 text-white text-[10px] font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-1"
           >
             <MessageCircle className="w-3 h-3" /> Ask
           </button>

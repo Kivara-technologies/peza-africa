@@ -14,16 +14,19 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      // No `credentials: "include"` here (deliberately removed) — this API
+      // authenticates via a Bearer token in the headers below, not cookies,
+      // so sending credentials would just be unnecessary exposure on an
+      // API whose CORS surface includes preview-deployment origins.
       async headers() {
         const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        // Real session token always wins. The demo token is only ever a
+        // fallback when there is no real session at all — never discard a
+        // live JWT in favor of it (that was the bug: `A || B ? X : Y`
+        // evaluated as `(A || B) ? X : Y`, so any truthy token still hit
+        // the demo branch).
+        const token = data.session?.access_token ?? ((supabase as any).isDemoMode ? "demo-access-token" : undefined);
         return token ? { authorization: `Bearer ${token}` } : {};
-      },
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
       },
     }),
   ],

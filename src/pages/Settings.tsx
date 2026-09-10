@@ -4,11 +4,13 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { LogIn, ChevronLeft } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -42,14 +44,14 @@ export default function Settings() {
   return (
     <div className="max-w-lg mx-auto px-4 pb-10">
       <button onClick={() => navigate("/profile")} className="flex items-center gap-1 text-sm text-gray-500 mb-4">
-        <ChevronLeft className="w-4 h-4" /> Back
+        <ChevronLeft className="w-4 h-4" /> {t("settings.back")}
       </button>
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">Settings</h1>
+      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">{t("settings.title")}</h1>
 
       <div className="bg-white rounded-xl border border-peza-cream-dark p-4 space-y-3">
-        <h2 className="font-bold text-peza-brown text-sm">Profile</h2>
+        <h2 className="font-bold text-peza-brown text-sm">{t("settings.profile")}</h2>
         <div>
-          <label className="text-xs text-gray-500 mb-1 block">Name</label>
+          <label className="text-xs text-gray-500 mb-1 block">{t("settings.name")}</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -57,7 +59,7 @@ export default function Settings() {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500 mb-1 block">Phone</label>
+          <label className="text-xs text-gray-500 mb-1 block">{t("settings.phone")}</label>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -65,20 +67,20 @@ export default function Settings() {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500 mb-1 block">Email</label>
+          <label className="text-xs text-gray-500 mb-1 block">{t("settings.email")}</label>
           <input
             value={user?.email ?? ""}
             disabled
             className="w-full border border-peza-cream-dark rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400"
           />
-          <p className="text-[11px] text-gray-400 mt-1">Email is tied to your login and can't be changed here.</p>
+          <p className="text-[11px] text-gray-400 mt-1">{t("settings.email_locked")}</p>
         </div>
         <button
           onClick={() => updateMutation.mutate({ name, phone })}
           disabled={updateMutation.isPending || !name.trim()}
           className="w-full bg-peza-orange text-white font-bold py-2.5 rounded-xl disabled:opacity-60"
         >
-          Save Changes
+          {t("settings.save")}
         </button>
       </div>
     </div>

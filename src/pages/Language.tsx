@@ -3,25 +3,28 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { LogIn, ChevronLeft, Check } from "lucide-react";
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "bem", label: "Bemba" },
-  { code: "nya", label: "Nyanja" },
-] as const;
+import { useLanguage, LANGUAGES } from "@/lib/i18n";
 
 export default function Language() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const utils = trpc.useUtils();
+  const { language, setLanguage, t } = useLanguage();
 
   const updateMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("Language preference saved");
+      toast.success(t("language.saved"));
       utils.auth.me.invalidate();
     },
     onError: (err) => toast.error(err.message || "Couldn't save preference"),
   });
+
+  const handleSelect = (code: typeof language) => {
+    // Apply immediately so the UI actually changes right now, then persist
+    // to the account so it follows the user across devices/sessions.
+    setLanguage(code);
+    updateMutation.mutate({ preferredLanguage: code });
+  };
 
   if (!authLoading && !isAuthenticated) {
     return (
@@ -38,24 +41,26 @@ export default function Language() {
   return (
     <div className="max-w-lg mx-auto px-4 pb-10">
       <button onClick={() => navigate("/profile")} className="flex items-center gap-1 text-sm text-gray-500 mb-4">
-        <ChevronLeft className="w-4 h-4" /> Back
+        <ChevronLeft className="w-4 h-4" /> {t("settings.back")}
       </button>
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-1">Language</h1>
-      <p className="text-xs text-gray-500 mb-4">
-        Choose your preferred language. We're still rolling out full translation across the app — this saves your
-        preference so we can prioritize it.
-      </p>
+      <h1 className="text-2xl font-extrabold text-peza-brown mb-1">{t("language.title")}</h1>
+      <p className="text-xs text-gray-500 mb-4">{t("language.subtitle")}</p>
 
       <div className="bg-white rounded-xl border border-peza-cream-dark divide-y divide-peza-cream-dark">
         {LANGUAGES.map((lang) => (
           <button
             key={lang.code}
-            onClick={() => updateMutation.mutate({ preferredLanguage: lang.code })}
+            onClick={() => handleSelect(lang.code)}
             disabled={updateMutation.isPending}
             className="w-full flex items-center justify-between px-4 py-3.5 text-left disabled:opacity-60"
           >
-            <span className="text-sm font-medium text-peza-brown">{lang.label}</span>
-            {user?.preferredLanguage === lang.code && <Check className="w-4 h-4 text-peza-orange" />}
+            <div>
+              <span className="text-sm font-medium text-peza-brown block">{lang.nativeLabel}</span>
+              <span className="text-xs text-gray-400">{lang.label}</span>
+            </div>
+            {(user?.preferredLanguage === lang.code || (!user?.preferredLanguage && language === lang.code)) && (
+              <Check className="w-4 h-4 text-peza-orange" />
+            )}
           </button>
         ))}
       </div>

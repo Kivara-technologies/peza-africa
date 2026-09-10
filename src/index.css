@@ -109,3 +109,40 @@
 .animate-slide-in {
   animation: slideIn 0.3s ease-out forwards;
 }
+
+/* Feature Showcase — tilted "alive" pillar tiles */
+@keyframes tileIn {
+  from { opacity: 0; transform: translateY(28px) rotate(var(--tile-rest-rot, 0deg)) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--tile-rest-rot, 0deg)) scale(1); }
+}
+
+@keyframes tileFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--tile-rest-rot, 0deg)); }
+  50% { transform: translateY(-7px) rotate(var(--tile-float-rot, 0deg)); }
+}
+
+@keyframes glareSweep {
+  0% { transform: translateX(-120%) skewX(-15deg); }
+  100% { transform: translateX(220%) skewX(-15deg); }
+}
+
+.tile-enter {
+  opacity: 0;
+  animation: tileIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.tile-float {
+  animation: tileFloat 5s ease-in-out infinite;
+}
+
+.tile-glare {
+  animation: glareSweep 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-enter, .tile-float, .tile-glare {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -10,6 +10,11 @@ export const productRouter = router({
         category: z.string().optional(),
         search: z.string().optional(),
         sort: z.enum(["newest", "price-asc", "price-desc", "rating"]).default("newest"),
+        // Optional pagination — defaults preserve today's behavior for any
+        // caller that doesn't pass these, just with a sane upper bound
+        // instead of an unbounded "return the whole catalog" query.
+        limit: z.number().int().min(1).max(200).default(100),
+        offset: z.number().int().min(0).default(0),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -39,7 +44,9 @@ export const productRouter = router({
         .select()
         .from(schema.products)
         .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(orderBy);
+        .orderBy(orderBy)
+        .limit(input.limit)
+        .offset(input.offset);
     }),
 
   byId: publicProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {

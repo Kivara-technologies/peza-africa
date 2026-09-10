@@ -55,6 +55,14 @@ export const vendorRouter = router({
       })
       .returning();
 
+    await ctx.db.insert(schema.adminAuditLog).values({
+      actorId: ctx.user.id,
+      action: "vendor.addProduct",
+      targetType: "product",
+      targetId: String(created.id),
+      detail: { name: created.name, price: created.price, categorySlug: input.categorySlug },
+    });
+
     return created;
   }),
 

@@ -1,8 +1,21 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
 import { schema } from "../../db/index.js";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { toCents, fromCents } from "../lib/money.js";
+
+// One GROUP BY query for all circle member counts, instead of one query
+// per circle (the N+1 the audit flagged in discover/myCircles).
+async function memberCountsByCircle(db: any, circleIds: number[]): Promise<Map<number, number>> {
+  if (circleIds.length === 0) return new Map();
+  const rows = await db
+    .select({ circleId: schema.chilimbaMembers.circleId, count: sql<number>`count(*)::int` })
+    .from(schema.chilimbaMembers)
+    .where(inArray(schema.chilimbaMembers.circleId, circleIds))
+    .groupBy(schema.chilimbaMembers.circleId);
+  return new Map(rows.map((r: any) => [r.circleId, r.count]));
+}
 
 export const chilimbaRouter = router({
   // Circles still recruiting members — open to join.
@@ -13,17 +26,12 @@ export const chilimbaRouter = router({
       .where(eq(schema.chilimbaCircles.status, "recruiting"))
       .orderBy(asc(schema.chilimbaCircles.createdAt));
 
-    const withCounts = await Promise.all(
-      circles.map(async (c) => {
-        const members = await ctx.db
-          .select({ id: schema.chilimbaMembers.id })
-          .from(schema.chilimbaMembers)
-          .where(eq(schema.chilimbaMembers.circleId, c.id));
-        return { ...c, memberCount: members.length };
-      }),
+    const counts = await memberCountsByCircle(
+      ctx.db,
+      circles.map((c) => c.id),
     );
 
-    return withCounts;
+    return circles.map((c) => ({ ...c, memberCount: counts.get(c.id) ?? 0 }));
   }),
 
   // Circles the signed-in user belongs to, with their own position/status.
@@ -39,13 +47,13 @@ export const chilimbaRouter = router({
       .where(eq(schema.chilimbaMembers.userId, ctx.user.id))
       .orderBy(asc(schema.chilimbaCircles.createdAt));
 
+    const counts = await memberCountsByCircle(
+      ctx.db,
+      memberships.map((m) => m.circle.id),
+    );
+
     const withDetail = await Promise.all(
       memberships.map(async (m) => {
-        const members = await ctx.db
-          .select({ id: schema.chilimbaMembers.id })
-          .from(schema.chilimbaMembers)
-          .where(eq(schema.chilimbaMembers.circleId, m.circle.id));
-
         const myContribution =
           m.circle.status === "active"
             ? await ctx.db
@@ -62,7 +70,7 @@ export const chilimbaRouter = router({
 
         return {
           ...m.circle,
-          memberCount: members.length,
+          memberCount: counts.get(m.circle.id) ?? 0,
           myPayoutPosition: m.payoutPosition,
           myHasBeenPaid: m.hasBeenPaid,
           hasContributedThisRound: myContribution.length > 0,
@@ -223,7 +231,7 @@ export const chilimbaRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "You've already contributed this round" });
         }
 
-        const contributionAmount = Number(circle.contributionAmount);
+        const contributionCents = toCents(circle.contributionAmount);
 
         const [balanceRow] = await tx
           .select({
@@ -236,19 +244,19 @@ export const chilimbaRouter = router({
               eq(schema.walletTransactions.status, "completed"),
             ),
           );
-        const balance = Number(balanceRow?.balance ?? 0);
+        const balanceCents = toCents(balanceRow?.balance ?? "0");
 
-        if (balance < contributionAmount) {
+        if (balanceCents < contributionCents) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Insufficient wallet balance. You need K${contributionAmount.toLocaleString()} but have K${balance.toLocaleString()}.`,
+            message: `Insufficient wallet balance. You need K${fromCents(contributionCents)} but have K${fromCents(balanceCents)}.`,
           });
         }
 
         // Debit the contributor's wallet and record the contribution.
         await tx.insert(schema.walletTransactions).values({
           userId: ctx.user.id,
-          amount: (-contributionAmount).toString(),
+          amount: fromCents(-contributionCents),
           type: "payment",
           status: "completed", // internal transfer between members — immediate, never pending
           description: `Chilimba contribution — "${circle.name}" (round ${circle.currentRound})`,
@@ -258,7 +266,7 @@ export const chilimbaRouter = router({
           circleId: circle.id,
           userId: ctx.user.id,
           round: circle.currentRound,
-          amount: contributionAmount.toString(),
+          amount: fromCents(contributionCents),
         });
 
         const allMembers = await tx
@@ -291,12 +299,14 @@ export const chilimbaRouter = router({
           });
         }
 
-        const pot = contributionAmount * allMembers.length;
+        const potCents = contributionCents * allMembers.length;
 
         await tx.insert(schema.walletTransactions).values({
           userId: recipient.userId,
-          amount: pot.toString(),
-          type: "refund",
+          amount: fromCents(potCents),
+          // "payout" (not "refund" — a payout was never a refund, and
+          // labeling it as one polluted refund accounting/reporting).
+          type: "payout",
           status: "completed", // internal transfer between members — immediate, never pending
           description: `Chilimba payout — "${circle.name}" (round ${circle.currentRound})`,
         });
@@ -305,7 +315,7 @@ export const chilimbaRouter = router({
           circleId: circle.id,
           round: circle.currentRound,
           recipientId: recipient.userId,
-          amount: pot.toString(),
+          amount: fromCents(potCents),
         });
 
         await tx
@@ -333,12 +343,12 @@ export const chilimbaRouter = router({
                 : "Chilimba round complete",
             message:
               m.userId === recipient.userId
-                ? `K${pot.toLocaleString()} has been added to your wallet from "${circle.name}".`
+                ? `K${fromCents(potCents)} has been added to your wallet from "${circle.name}".`
                 : `Round ${circle.currentRound} of "${circle.name}" is complete. Payout sent.`,
           });
         }
 
-        return { success: true, roundComplete: true, payoutAmount: pot };
+        return { success: true, roundComplete: true, payoutAmount: fromCents(potCents) };
       });
     }),
 });

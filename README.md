@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# PEZA Africa — Marketplace App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Zambia-focused B2B/agri-commerce marketplace. React 19 + Vite frontend, Hono +
+tRPC backend, Supabase Auth, Postgres via Drizzle. Wallet payments, Chilimba
+(rotating savings circles), rider delivery with live tracking, jobs board,
+chat, and Infobip SMS/WhatsApp commerce.
 
-Currently, two official plugins are available:
+Live at [shop.peza.africa](https://shop.peza.africa) (marketing site at
+[www.peza.africa](https://www.peza.africa) is a separate Vercel project).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## React Compiler
+- **Frontend:** React 19, Vite, TypeScript, Tailwind, shadcn/ui, tRPC client
+- **Backend:** Hono (serverless entry point on Vercel), tRPC routers, Drizzle ORM
+- **Data:** Postgres (Supabase-hosted), Supabase Auth
+- **Messaging:** Infobip (SMS + WhatsApp)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Local development
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env   # fill in Supabase + DB values
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Runs the Vite dev server. The tRPC API is served from `/api/*` — see
+`server/app.ts` for the Hono entry point and `vercel.json` for how it's wired
+into serverless functions in production.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Database
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Schema lives in `db/schema.ts` (Drizzle). Migrations are plain SQL in
+`db/migrations/`, applied in order — see `DEPLOY.md` for the full first-time
+setup (Supabase project creation, running `0000_init.sql`, seeding, env vars).
+
+To add a new migration, create the next-numbered `NNNN_description.sql` file
+and apply it via the Supabase SQL editor or your preferred Postgres client.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+
+## Project structure
+
 ```
+src/            React app (pages, components, hooks, providers)
+server/         Hono app, tRPC routers, auth context
+  routers/      One file per tRPC router (order, wallet, chilimba, rider, ...)
+  lib/          Server-side utilities (e.g. money.ts for cent-safe arithmetic)
+db/             Drizzle schema + SQL migrations
+api/            Vercel serverless function entry point(s)
+```
+
+## Deployment
+
+See `DEPLOY.md` for the full Supabase → GitHub → Vercel → custom domain
+walkthrough.

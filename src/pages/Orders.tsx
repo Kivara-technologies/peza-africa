@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { Package, ChevronRight } from "lucide-react";
+import { Package, ChevronRight, ShieldCheck, MapPin } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-50 text-amber-700",
@@ -12,6 +13,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Orders() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const { data: orders } = trpc.order.list.useQuery();
 
@@ -21,10 +23,17 @@ export default function Orders() {
   const filters = ["all", "pending", "paid", "processing", "shipped", "delivered"];
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">My Orders</h1>
+    <div className="max-w-7xl mx-auto px-4 pb-8">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-peza-orange font-bold">Account</p>
+          <h1 className="text-2xl font-extrabold text-peza-brown mt-1">My Orders</h1>
+        </div>
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-peza-cream-dark bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-peza-green">
+          <ShieldCheck className="w-3 h-3" /> Secure
+        </div>
+      </div>
 
-      {/* Filters */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">
         {filters.map((f) => (
           <button
@@ -37,19 +46,18 @@ export default function Orders() {
         ))}
       </div>
 
-      {/* Orders List */}
       {filtered && filtered.length > 0 ? (
         <div className="space-y-3">
           {filtered.map((order) => (
-            <div key={order.id} className="bg-white rounded-xl border border-peza-cream-dark p-4">
+            <div key={order.id} className="bg-white rounded-2xl border border-peza-cream-dark p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-500">Order {order.orderNumber}</span>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full capitalize ${statusColors[order.status] || "bg-gray-50 text-gray-600"}`}>
+                <span className={`text-[10px] font-bold px-3 py-1 rounded-full capitalize ${statusColors[order.status] || "bg-gray-50 text-gray-600"}`}>
                   {order.status}
                 </span>
               </div>
               {order.items.length > 0 && (
-                <p className="text-xs text-gray-500 mb-2 truncate">
+                <p className="text-xs text-gray-500 mb-2 line-clamp-2">
                   {order.items.map((i) => `${i.productName} x${i.quantity}`).join(", ")}
                 </p>
               )}
@@ -62,6 +70,15 @@ export default function Orders() {
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </div>
+              {order.status === "shipped" && (
+                <button
+                  onClick={() => navigate(`/track/${order.id}`)}
+                  className="w-full mt-3 py-2.5 rounded-lg bg-peza-orange/10 text-peza-orange text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-peza-orange/20 transition-colors"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Track Delivery
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -18,8 +18,19 @@ export const profiles = pgTable("profiles", {
   email: text("email"),
   phone: text("phone"),
   preferredLanguage: text("preferred_language").notNull().default("en"), // en | bem | nya
-  role: text("role").notNull().default("customer"), // "customer" | "admin"
+  role: text("role").notNull().default("customer"), // "customer" | "admin" | "rider"
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ── Rider locations ──────────────────────────────────────────────────
+// One row per rider, upserted on every location ping while they're online.
+// Deliberately a separate table from profiles — see migration 0008 for why.
+export const riderLocations = pgTable("rider_locations", {
+  riderId: uuid("rider_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
+  lat: numeric("lat").notNull(),
+  lng: numeric("lng").notNull(),
+  isOnline: boolean("is_online").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // ── Catalog ──────────────────────────────────────────────────────────
@@ -68,7 +79,8 @@ export const orders = pgTable("orders", {
   deliveryPhone: text("delivery_phone").notNull().default(""),
   deliveryLat: numeric("delivery_lat"),
   deliveryLng: numeric("delivery_lng"),
-  status: text("status").notNull().default("pending"), // pending|paid|processing|shipped|delivered|cancelled
+  riderId: uuid("rider_id").references(() => profiles.id), // assigned once a rider claims the delivery
+  status: text("status").notNull().default("pending"), // pending|paid|processing|shipped|delivered|cancelled — "shipped" doubles as "out for delivery"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -92,7 +104,7 @@ export const walletTransactions = pgTable("wallet_transactions", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => profiles.id),
   amount: numeric("amount").notNull(), // positive = credit, negative = debit
-  type: text("type").notNull(), // "topup" | "payment" | "refund"
+  type: text("type").notNull(), // "topup" | "payment" | "refund" | "payout"
   status: text("status").notNull().default("completed"), // "pending" | "completed" | "failed"
   provider: text("provider"), // Airtel Money | MTN MoMo | Zamtel Kwacha
   providerReference: text("provider_reference"), // provider's transaction id, for webhook reconciliation
@@ -179,6 +191,20 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const infobipMessages = pgTable("infobip_messages", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull().default("infobip"),
+  channel: text("channel").notNull().default("sms"), // sms | whatsapp
+  direction: text("direction").notNull().default("inbound"), // inbound | outbound
+  sender: text("sender"),
+  recipient: text("recipient"),
+  externalId: text("external_id"),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("received"),
+  payload: jsonb("payload"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── Chilimba (rotating savings circles) ─────────────────────────────
 // A group of members each contribute a fixed amount per round; the full
 // pot is paid out to one member per round, in join order, until every
@@ -213,6 +239,20 @@ export const chilimbaContributions = pgTable("chilimba_contributions", {
   userId: uuid("user_id").notNull().references(() => profiles.id),
   round: integer("round").notNull(),
   amount: numeric("amount").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ── Admin audit log ──────────────────────────────────────────────────
+// Minimal (actor, action, target, detail) trail. Written by admin-only
+// mutations (order.confirmOrder, rider.becomeRider, product create) so
+// there's a record of who did what, per the P2 audit item.
+export const adminAuditLog = pgTable("admin_audit_log", {
+  id: serial("id").primaryKey(),
+  actorId: uuid("actor_id").notNull().references(() => profiles.id),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id").notNull(),
+  detail: jsonb("detail"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

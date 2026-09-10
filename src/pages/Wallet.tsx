@@ -31,18 +31,24 @@ export default function Wallet() {
   const quickAmounts = [500, 1000, 2000, 5000];
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      <h1 className="text-2xl font-extrabold text-peza-brown mb-4">My Wallet</h1>
+    <div className="max-w-7xl mx-auto px-4 pb-8">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-peza-orange font-bold">Payments</p>
+          <h1 className="text-2xl font-extrabold text-peza-brown mt-1">My Wallet</h1>
+        </div>
+        <div className="rounded-full border border-peza-cream-dark bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-peza-green">
+          Secure
+        </div>
+      </div>
 
-      {/* Balance Card */}
-      <div className="bg-gradient-to-br from-peza-brown to-peza-brown-light rounded-2xl p-6 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-br from-peza-brown to-peza-brown-light rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
         <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-peza-gold/10" />
         <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-peza-gold/5" />
         <p className="text-xs text-white/60 uppercase tracking-wider font-semibold">Available Balance</p>
         <p className="text-4xl font-extrabold text-peza-gold mt-2">{fmtK(balance)}</p>
         <p className="text-xs text-white/50 mt-1">Zambian Kwacha (ZMW)</p>
 
-        {/* Actions */}
         <div className="flex justify-around mt-6">
           {[
             { icon: Plus, label: "Top Up", action: () => setShowTopUp(true) },
@@ -60,12 +66,10 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Top Up Form */}
       {showTopUp && (
-        <div className="bg-white rounded-xl border border-peza-cream-dark p-5 mt-4 animate-fade-in-up">
+        <div className="bg-white rounded-2xl border border-peza-cream-dark p-5 mt-4 animate-fade-in-up shadow-sm">
           <h3 className="text-base font-bold text-peza-brown mb-4">Top Up Wallet</h3>
 
-          {/* Provider Selection */}
           <div className="flex gap-2 mb-4">
             {(["Airtel Money", "MTN MoMo", "Zamtel Kwacha"] as const).map((p) => (
               <button
@@ -78,7 +82,6 @@ export default function Wallet() {
             ))}
           </div>
 
-          {/* Amount Input */}
           <input
             type="number"
             placeholder="Amount (ZMW)"
@@ -87,7 +90,6 @@ export default function Wallet() {
             onChange={(e) => setTopUpAmount(e.target.value)}
           />
 
-          {/* Quick Amounts */}
           <div className="flex gap-2 mb-4">
             {quickAmounts.map((a) => (
               <button
@@ -121,14 +123,11 @@ export default function Wallet() {
         </div>
       )}
 
-      {/* Airtime top-up coming soon */}
-
-      {/* Transaction History */}
       <h2 className="text-lg font-bold text-peza-brown mt-6 mb-3">Transaction History</h2>
       {transactions && transactions.length > 0 ? (
         <div className="space-y-2">
           {transactions.map((t) => (
-            <div key={t.id} className="bg-white rounded-xl border border-peza-cream-dark p-4 flex items-center gap-3">
+            <div key={t.id} className="bg-white rounded-2xl border border-peza-cream-dark p-4 flex items-center gap-3 shadow-sm">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${Number(t.amount) > 0 ? "bg-green-50" : "bg-orange-50"}`}>
                 {Number(t.amount) > 0 ? (
                   <ArrowDownLeft className={`w-5 h-5 ${Number(t.amount) > 0 ? "text-peza-green" : "text-peza-orange"}`} />

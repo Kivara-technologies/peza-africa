@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../trpc.js";
+import { router, publicProcedure, protectedProcedure, invalidateProfileCache } from "../trpc.js";
 import { schema } from "../../db/index.js";
 import { eq } from "drizzle-orm";
 
@@ -26,6 +26,7 @@ export const authRouter = router({
         })
         .where(eq(schema.profiles.id, ctx.user.id))
         .returning();
+      invalidateProfileCache(ctx.user.id);
       return updated;
     }),
 

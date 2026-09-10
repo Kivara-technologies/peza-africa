@@ -38,8 +38,8 @@ export default function ProductDetail() {
   const imageSrc = showReal && product.realPhoto ? product.realPhoto : product.image;
 
   const handleBuyNow = () => {
-    addItem(product);
-    toast.success("Added to cart! Proceeding to checkout...");
+    addItem(product, qty);
+    toast.success(`${qty} ${product.name}${qty > 1 ? "s" : ""} added to cart. Proceeding to checkout...`);
     setTimeout(() => navigate("/cart"), 500);
   };
 
@@ -148,14 +148,22 @@ export default function ProductDetail() {
 
         {/* Actions: Add to Cart + Ask Seller */}
         <div className="grid grid-cols-2 gap-3 mt-5">
-          <button onClick={() => addItem(product)} className="py-3.5 border-2 border-peza-orange text-peza-orange rounded-xl font-bold text-sm hover:bg-peza-orange/5 transition-colors">
+          <button onClick={() => addItem(product, qty)} className="py-3.5 border-2 border-peza-orange text-peza-orange rounded-xl font-bold text-sm hover:bg-peza-orange/5 transition-colors">
             🛒 Add to Cart
           </button>
           <WhatsAppButton productName={product.name} phone={product.whatsappNumber} size="lg" />
         </div>
-        <button onClick={handleBuyNow} className="w-full mt-3 py-3.5 bg-peza-orange text-white rounded-xl font-bold text-sm hover:bg-peza-orange-dark transition-colors shadow-peza-orange">
-          ⚡ Buy Now
-        </button>
+
+        <div className="sticky bottom-0 z-10 mt-4 mb-2 -mx-4 border-t border-peza-cream-dark bg-white/95 backdrop-blur-md px-4 py-3 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => addItem(product, qty)} className="py-3 border border-peza-orange text-peza-orange rounded-xl font-bold text-sm hover:bg-peza-orange/5 transition-colors">
+              Add {qty > 1 ? `(${qty})` : ""}
+            </button>
+            <button onClick={handleBuyNow} className="py-3 bg-peza-orange text-white rounded-xl font-bold text-sm hover:bg-peza-orange-dark transition-colors shadow-peza-orange">
+              Buy Now
+            </button>
+          </div>
+        </div>
 
         {/* Chilimba Calculator */}
         {product.laybyMonths && (
