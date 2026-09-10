@@ -35,7 +35,7 @@ export function buildInfobipReply(raw: string, categories: Array<{ slug: string;
 async function processInfobipInboundMessage(body: any) {
   const text = String(body?.text ?? body?.message?.text ?? "").trim(); const sender = String(body?.from ?? body?.sender ?? body?.msisdn ?? ""); const channel = String(body?.channel ?? body?.message?.type ?? "sms").toLowerCase(); const payload = body ?? {};
   if (!text) return { ok: false, error: "Missing text body" };
-  const categories = await db.select().from(schema.categories).orderBy(schema.categories.name);
+  const categories: Array<{ slug: string; name: string }> = await db.select({ slug: schema.categories.slug, name: schema.categories.name }).from(schema.categories).orderBy(schema.categories.name);
   const products = await db.select({ id: schema.products.id, name: schema.products.name, price: schema.products.price, categorySlug: schema.products.categorySlug }).from(schema.products).where(or(like(schema.products.name, `%${text}%`), like(schema.products.description, `%${text}%`))).limit(20);
   const fallbackProducts = await db.select({ id: schema.products.id, name: schema.products.name, price: schema.products.price, categorySlug: schema.products.categorySlug }).from(schema.products).limit(25);
   const replyText = buildInfobipReply(text, categories, products.length > 0 ? products : fallbackProducts);
@@ -51,10 +51,6 @@ paymentWebhookRoutes.post("/mobile-money", async (c) => {
   const providedSecret = c.req.header("x-webhook-secret"); if (!secretsMatch(providedSecret, configuredSecret)) return c.json({ error: "Invalid signature" }, 401);
 
   const reference = String(body.reference);
-  // Marketplace mobile-money checkout reserves inventory while the order is pending.
-  // Settle the state transition and, on a provider failure, release that reservation in
-  // the same database transaction. The pending -> terminal-state conditional update is
-  // the idempotency guard: duplicate callbacks cannot restore stock twice.
   const [order] = await db.select().from(schema.orders).where(eq(schema.orders.paymentReference, reference)).limit(1);
   if (order) {
     if (order.paymentMethod !== "AIRTEL" && order.paymentMethod !== "MTN" && order.paymentMethod !== "ZAMTEL") return c.json({ error: "Payment reference is not a mobile-money order" }, 400);
@@ -67,9 +63,7 @@ paymentWebhookRoutes.post("/mobile-money", async (c) => {
         .set({ status: nextStatus })
         .where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "pending")))
         .returning();
-
       if (!updated) return { updated: false as const };
-
       if (!succeeded) {
         const items = await tx.select({ productId: schema.orderItems.productId, quantity: schema.orderItems.quantity })
           .from(schema.orderItems)
@@ -87,14 +81,11 @@ paymentWebhookRoutes.post("/mobile-money", async (c) => {
           message: `Payment for order ${order.orderNumber} has been confirmed. It's ready for delivery.`,
         });
       }
-
       return { updated: true as const, status: updated.status };
     });
-
     return c.json({ ok: true, orderId: order.id, status: result.status ?? order.status, alreadySettled: !result.updated });
   }
 
-  // Backward-compatible wallet transaction path for provider callbacks created by older integrations.
   if (!body.externalId) return c.json({ error: "No matching payment order" }, 404);
   const txId = Number(body.externalId);
   const [alreadyProcessed] = await db.select({ id: schema.walletTransactions.id }).from(schema.walletTransactions).where(eq(schema.walletTransactions.providerReference, reference)).limit(1);
@@ -119,6 +110,6 @@ paymentWebhookRoutes.post("/infobip/whatsapp", async (c) => {
 });
 paymentWebhookRoutes.get("/infobip/test", async (c) => {
   if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") return c.json({ error: "Not available in production" }, 404);
-  const categories = await db.select().from(schema.categories).orderBy(schema.categories.name); const products = await db.select({ name: schema.products.name, price: schema.products.price, categorySlug: schema.products.categorySlug }).from(schema.products).limit(5);
+  const categories: Array<{ slug: string; name: string }> = await db.select({ slug: schema.categories.slug, name: schema.categories.name }).from(schema.categories).orderBy(schema.categories.name); const products = await db.select({ name: schema.products.name, price: schema.products.price, categorySlug: schema.products.categorySlug }).from(schema.products).limit(5);
   return c.json({ sample: buildInfobipReply("menu", categories, products), categoriesCount: categories.length, productsCount: products.length });
 });
