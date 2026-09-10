@@ -1,38 +1,38 @@
 export interface PremiumBanner {
-    image: string;
-    title: string;
-    subtitle: string;
-    accent: string;
-    cta: string;
+  image: string;
+  title: string;
+  subtitle: string;
+  accent: string;
+  cta: string;
 }
 
 export const premiumBanners: PremiumBanner[] = [
-    {
-        image: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1400&q=80",
-        title: "Premium Tech Deals",
-        subtitle: "Samsung, Apple, Sony and more — built for modern African homes.",
-        accent: "from-amber-400 via-orange-500 to-red-600",
-        cta: "Shop premium devices",
-    },
-    {
-        image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80",
-        title: "Home Upgrade Essentials",
-        subtitle: "Smart lighting, cookware, décor and everyday living upgrades.",
-        accent: "from-sky-500 via-cyan-500 to-emerald-500",
-        cta: "Upgrade the home",
-    },
-    {
-        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1400&q=80",
-        title: "Fashion & Lifestyle",
-        subtitle: "Trend-led wardrobe picks from African and global brands.",
-        accent: "from-pink-500 via-violet-500 to-purple-700",
-        cta: "Browse latest styles",
-    },
-    {
-        image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1400&q=80",
-        title: "Daily Groceries & Essentials",
-        subtitle: "Household staples, food and family essentials at market-friendly prices.",
-        accent: "from-green-500 via-lime-500 to-emerald-700",
-        cta: "Save on essentials",
-    },
+  {
+    image: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?auto=format&fit=crop&w=2000&q=90",
+    title: "Tech Worth Bringing Home",
+    subtitle: "Phones, laptops, audio and smart essentials from brands people know and trust.",
+    accent: "from-slate-950 via-slate-900/55 to-orange-700/30",
+    cta: "Shop technology",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=2000&q=90",
+    title: "Make Home Feel Better",
+    subtitle: "Kitchen, décor, appliances and everyday upgrades selected for modern Zambian homes.",
+    accent: "from-emerald-950 via-emerald-900/50 to-amber-700/30",
+    cta: "Shop home essentials",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=2000&q=90",
+    title: "Style For Every Day",
+    subtitle: "Fresh fashion, footwear and lifestyle picks from African and international labels.",
+    accent: "from-fuchsia-950 via-purple-900/50 to-rose-700/25",
+    cta: "Explore fashion",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=2000&q=90",
+    title: "Fresh Deals, Every Day",
+    subtitle: "Groceries, food and household essentials at prices made for the local market.",
+    accent: "from-green-950 via-green-900/50 to-lime-700/25",
+    cta: "Shop groceries",
+  },
 ];
