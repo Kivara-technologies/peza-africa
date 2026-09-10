@@ -17,7 +17,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.email || !form.password) {
+    const email = form.email.trim().toLowerCase();
+
+    if (!email || !form.password) {
       toast.error("Please fill all fields");
       return;
     }
@@ -31,21 +33,38 @@ export default function Login() {
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
-          email: form.email,
+          email,
           password: form.password,
         });
         if (error) throw error;
         toast.success("Welcome back!");
+        navigate(redirectPath, { replace: true });
       } else {
-        const { error } = await supabase.auth.signUp({
-          email: form.email,
+        const { data, error } = await supabase.auth.signUp({
+          email,
           password: form.password,
-          options: { data: { name: form.name.trim() || undefined } },
+          options: {
+            data: { name: form.name.trim() || undefined },
+            // Keep confirmation links on the production shop domain. This
+            // must also be present in Supabase Auth's Redirect URLs allowlist.
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
         });
         if (error) throw error;
-        toast.success("Account created! Check your email if confirmation is required.");
+
+        // With Supabase email confirmation enabled, signUp returns a user but
+        // deliberately returns no session until the email is confirmed.
+        // Do not navigate into protected pages in that state.
+        if (!data.session) {
+          toast.success("Account created. Check your email to confirm your account, then sign in.");
+          setMode("login");
+          setForm((current) => ({ ...current, password: "" }));
+          return;
+        }
+
+        toast.success("Account created! Welcome to PEZA.");
+        navigate(redirectPath, { replace: true });
       }
-      navigate(redirectPath, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -56,7 +75,7 @@ export default function Login() {
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/login` },
     });
     if (error) toast.error(error.message);
   };
@@ -122,7 +141,6 @@ export default function Login() {
           )}
 
           {mode === "register" && (
-
             <div className="mb-4">
               <label className="block text-xs font-semibold text-peza-brown-light mb-2">Full Name</label>
               <input
