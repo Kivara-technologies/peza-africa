@@ -19,6 +19,8 @@ export function useAuth(options?: UseAuthOptions) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
 
+  const isRiderRoute = typeof window !== "undefined" && window.location.pathname === "/rider";
+
   const {
     data: user,
     isLoading: userLoading,
@@ -26,7 +28,9 @@ export function useAuth(options?: UseAuthOptions) {
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
     enabled: !sessionLoading && !!session,
-    staleTime: 1000 * 60 * 5,
+    staleTime: isRiderRoute ? 0 : 1000 * 60 * 5,
+    refetchInterval: isRiderRoute ? 5000 : false,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 
