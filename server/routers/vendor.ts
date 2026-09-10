@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
@@ -6,7 +7,6 @@ import { schema } from "../../db/index.js";
 const productInput = z.object({
   name: z.string().min(1, "Product name is required"), description: z.string().optional(), price: z.number().positive("Price must be greater than 0"), comparePrice: z.number().positive().optional(), image: z.string().url("Image must be a valid URL"), categorySlug: z.string().min(1, "Category is required"), whatsappNumber: z.string().optional(), laybyMonths: z.number().int().positive().optional(), stock: z.number().int().min(0).default(10),
 });
-
 const SALES_STATUSES = ["paid", "processing", "shipped", "delivered"] as const;
 
 export const vendorRouter = router({
@@ -38,7 +38,7 @@ export const vendorRouter = router({
     const myProducts = await ctx.db.select({ id: schema.products.id }).from(schema.products).where(eq(schema.products.vendorId, ctx.user.id));
     const productIds = myProducts.map((p) => p.id);
     if (productIds.length === 0) return { totalRevenue: 0, unitsSold: 0, ordersCount: 0, productCount: 0 };
-    const [summary] = await ctx.db.select({ totalRevenue: sql<string>`coalesce(sum(${schema.orderItems.total}), 0)`, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}), 0)`, ordersCount: sql<string>`count(distinct ${schema.orderItems.orderId})` }).from(schema.orderItems).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${schema.orderItems.productId} in (${sql.join(productIds.map((id) => sql`${id}`), sql`, `)}) and ${schema.orders.status} in (${sql.join(SALES_STATUSES.map((status) => sql`${status}`), sql`, `)})`);
+    const [summary] = await ctx.db.select({ totalRevenue: sql<string>`coalesce(sum(${schema.orderItems.total}), 0)`, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}), 0)`, ordersCount: sql<string>`count(distinct ${schema.orderItems.orderId})` }).from(schema.orderItems).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${inArray(schema.orderItems.productId, productIds)} and ${inArray(schema.orders.status, SALES_STATUSES)}`);
     return { totalRevenue: Number(summary?.totalRevenue ?? 0), unitsSold: Number(summary?.unitsSold ?? 0), ordersCount: Number(summary?.ordersCount ?? 0), productCount: productIds.length };
   }),
   inventory: protectedProcedure.query(async ({ ctx }) => {
@@ -46,7 +46,7 @@ export const vendorRouter = router({
     return { totalUnits: rows.reduce((sum, p) => sum + p.stock, 0), lowStock: rows.filter((p) => p.stock <= 5), products: rows };
   }),
   topProducts: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.db.select({ productId: schema.orderItems.productId, productName: schema.orderItems.productName, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}),0)`, revenue: sql<string>`coalesce(sum(${schema.orderItems.total}),0)` }).from(schema.orderItems).innerJoin(schema.products, eq(schema.products.id, schema.orderItems.productId)).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${schema.products.vendorId} = ${ctx.user.id} and ${schema.orders.status} in (${sql.join(SALES_STATUSES.map((status) => sql`${status}`), sql`, `)})`).groupBy(schema.orderItems.productId, schema.orderItems.productName).orderBy(desc(sql`sum(${schema.orderItems.total})`)).limit(5);
+    const rows = await ctx.db.select({ productId: schema.orderItems.productId, productName: schema.orderItems.productName, unitsSold: sql<string>`coalesce(sum(${schema.orderItems.quantity}),0)`, revenue: sql<string>`coalesce(sum(${schema.orderItems.total}),0)` }).from(schema.orderItems).innerJoin(schema.products, eq(schema.products.id, schema.orderItems.productId)).innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId)).where(sql`${eq(schema.products.vendorId, ctx.user.id)} and ${inArray(schema.orders.status, SALES_STATUSES)}`).groupBy(schema.orderItems.productId, schema.orderItems.productName).orderBy(desc(sql`sum(${schema.orderItems.total})`)).limit(5);
     return rows.map((p) => ({ ...p, unitsSold: Number(p.unitsSold), revenue: Number(p.revenue) }));
   }),
 });
