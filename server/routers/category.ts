@@ -1,9 +1,13 @@
 import { router, publicProcedure } from "../trpc.js";
 import { schema } from "../../db/index.js";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 export const categoryRouter = router({
-  list: publicProcedure.query(({ ctx }) => {
-    return ctx.db.select().from(schema.categories).orderBy(asc(schema.categories.name));
-  }),
+  list: publicProcedure.query(({ ctx }) =>
+    ctx.db
+      .select()
+      .from(schema.categories)
+      .where(eq(schema.categories.isActive, true))
+      .orderBy(asc(schema.categories.sortOrder), asc(schema.categories.name)),
+  ),
 });
