@@ -1,5 +1,5 @@
 import {
-  pgTable, serial, text, integer, numeric, boolean, timestamp, uuid, jsonb,
+  pgTable, serial, text, integer, numeric, boolean, timestamp, uuid, jsonb, bigint,
 } from "drizzle-orm/pg-core";
 
 export const profiles = pgTable("profiles", {
@@ -27,3 +27,4 @@ export const chilimbaMembers = pgTable("chilimba_members", { id: serial("id").pr
 export const chilimbaContributions = pgTable("chilimba_contributions", { id: serial("id").primaryKey(), circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }), userId: uuid("user_id").notNull().references(() => profiles.id), round: integer("round").notNull(), amount: numeric("amount").notNull(), createdAt: timestamp("created_at").notNull().defaultNow() });
 export const adminAuditLog = pgTable("admin_audit_log", { id: serial("id").primaryKey(), actorId: uuid("actor_id").notNull().references(() => profiles.id), action: text("action").notNull(), targetType: text("target_type").notNull(), targetId: text("target_id").notNull(), detail: jsonb("detail"), createdAt: timestamp("created_at").notNull().defaultNow() });
 export const chilimbaPayouts = pgTable("chilimba_payouts", { id: serial("id").primaryKey(), circleId: integer("circle_id").notNull().references(() => chilimbaCircles.id, { onDelete: "cascade" }), round: integer("round").notNull(), recipientId: uuid("recipient_id").notNull().references(() => profiles.id), amount: numeric("amount").notNull(), paidAt: timestamp("paid_at").notNull().defaultNow() });
+export const riderApplications = pgTable("rider_applications", { id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(), userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }), status: text("status").notNull().default("pending"), vehicleType: text("vehicle_type").notNull(), vehicleRegistration: text("vehicle_registration"), serviceArea: text("service_area"), notes: text("notes"), reviewedBy: uuid("reviewed_by").references(() => profiles.id), reviewedAt: timestamp("reviewed_at"), reviewNote: text("review_note"), createdAt: timestamp("created_at").notNull().defaultNow(), updatedAt: timestamp("updated_at").notNull().defaultNow() });
