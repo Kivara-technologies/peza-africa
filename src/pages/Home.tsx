@@ -29,7 +29,7 @@ export default function Home() {
   const { data: marketData } = trpc.market.list.useQuery({ category: "commodities" });
 
   useEffect(() => {
-    const t = setInterval(() => setBannerIdx((i) => (i + 1) % 2), 5000);
+    const t = setInterval(() => setBannerIdx((i) => (i + 1) % premiumBanners.length), 5000);
     return () => clearInterval(t);
   }, []);
 
