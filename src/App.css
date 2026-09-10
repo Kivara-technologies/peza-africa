@@ -17,71 +17,13 @@
 }
 
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+  a:nth-of-type(2) .logo { animation: logo-spin infinite 20s linear; }
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* PEZA brand rail: recognizable SVG marks with consistent sizing. */
-.animate-ticker > span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  background-repeat: no-repeat;
-  background-position: 16px center;
-  background-size: 20px 20px;
-  padding-left: 46px !important;
-  padding-right: 26px !important;
-  text-indent: 0;
-}
-.animate-ticker > span:nth-child(12n + 1),
-.animate-ticker > span:nth-child(12n + 13) { background-image: url("https://cdn.simpleicons.org/samsung/ffffff"); }
-.animate-ticker > span:nth-child(12n + 2),
-.animate-ticker > span:nth-child(12n + 14) { background-image: url("https://cdn.simpleicons.org/apple/ffffff"); }
-.animate-ticker > span:nth-child(12n + 3),
-.animate-ticker > span:nth-child(12n + 15) { background-image: url("https://cdn.simpleicons.org/nike/ffffff"); }
-.animate-ticker > span:nth-child(12n + 4),
-.animate-ticker > span:nth-child(12n + 16) { background-image: url("https://cdn.simpleicons.org/adidas/ffffff"); }
-.animate-ticker > span:nth-child(12n + 5),
-.animate-ticker > span:nth-child(12n + 17) { background-image: url("https://cdn.simpleicons.org/sony/ffffff"); }
-.animate-ticker > span:nth-child(12n + 6),
-.animate-ticker > span:nth-child(12n + 18) { background-image: url("https://cdn.simpleicons.org/lg/ffffff"); }
-.animate-ticker > span:nth-child(12n + 7),
-.animate-ticker > span:nth-child(12n + 19) { background-image: url("https://cdn.simpleicons.org/huawei/ffffff"); }
-.animate-ticker > span:nth-child(12n + 8),
-.animate-ticker > span:nth-child(12n + 20) { background-image: url("https://cdn.simpleicons.org/tecno/ffffff"); }
-.animate-ticker > span:nth-child(12n + 9),
-.animate-ticker > span:nth-child(12n + 21) { background-image: url("https://cdn.simpleicons.org/zamtel/ffffff"); }
-.animate-ticker > span:nth-child(12n + 10),
-.animate-ticker > span:nth-child(12n + 22) { background-image: url("https://cdn.simpleicons.org/airtel/ffffff"); }
-.animate-ticker > span:nth-child(12n + 11),
-.animate-ticker > span:nth-child(12n + 23) { background-image: url("https://cdn.simpleicons.org/mtn/ffffff"); }
-.animate-ticker > span:nth-child(12n + 12),
-.animate-ticker > span:nth-child(12n + 24) { background-image: url("https://cdn.simpleicons.org/unilever/ffffff"); }
-
-@media (max-width: 640px) {
-  .animate-ticker > span {
-    min-height: 28px;
-    background-position: 12px center;
-    background-size: 17px 17px;
-    padding-left: 38px !important;
-    padding-right: 20px !important;
-  }
-}
+.card { padding: 2em; }
+.read-the-docs { color: #888; }
