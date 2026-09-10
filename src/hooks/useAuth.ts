@@ -1,8 +1,9 @@
 import { trpc } from "@/providers/trpc";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { LOGIN_PATH } from "@/const";
 import { supabase } from "@/lib/supabaseClient";
+import type { Session } from "@supabase/supabase-js";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -14,12 +15,13 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
 
   const navigate = useNavigate();
-
   const utils = trpc.useUtils();
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   const {
     data: user,
-    isLoading,
+    isLoading: userLoading,
     error,
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
@@ -30,6 +32,7 @@ export function useAuth(options?: UseAuthOptions) {
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: async () => {
       await supabase.auth.signOut();
+      setSession(null);
       await utils.invalidate();
       navigate(redirectPath, { replace: true });
     },
@@ -40,38 +43,68 @@ export function useAuth(options?: UseAuthOptions) {
       await logoutMutation.mutateAsync();
     } catch {
       await supabase.auth.signOut();
+      setSession(null);
       await utils.invalidate();
       navigate(redirectPath, { replace: true });
     }
   }, [logoutMutation, navigate, redirectPath, utils]);
 
-  // Refetch the current user whenever the Supabase session changes
-  // (sign in, sign out, token refresh, OAuth redirect callback).
+  // Supabase is the source of truth for authentication. The tRPC profile is
+  // application data and may be temporarily unavailable without meaning the
+  // user's valid Supabase session has disappeared.
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
-      refetch();
+    let mounted = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setSession(data.session ?? null);
+      setSessionLoading(false);
+      void refetch();
     });
-    return () => subscription.subscription.unsubscribe();
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (!mounted) return;
+        setSession(nextSession ?? null);
+        setSessionLoading(false);
+        void refetch();
+      },
+    );
+
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, [refetch]);
 
   useEffect(() => {
-    if (redirectOnUnauthenticated && !isLoading && !user) {
+    if (redirectOnUnauthenticated && !sessionLoading && !session) {
       const currentPath = window.location.pathname;
       if (currentPath !== redirectPath) {
-        navigate(redirectPath);
+        navigate(redirectPath, { replace: true });
       }
     }
-  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
+  }, [redirectOnUnauthenticated, sessionLoading, session, navigate, redirectPath]);
 
   return useMemo(
     () => ({
       user: user ?? null,
-      isAuthenticated: !!user,
-      isLoading: isLoading || logoutMutation.isPending,
+      session,
+      isAuthenticated: !!session,
+      isLoading: sessionLoading || userLoading || logoutMutation.isPending,
       error,
       logout,
       refresh: refetch,
     }),
-    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
+    [
+      user,
+      session,
+      sessionLoading,
+      userLoading,
+      logoutMutation.isPending,
+      error,
+      logout,
+      refetch,
+    ],
   );
 }
