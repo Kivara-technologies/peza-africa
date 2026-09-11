@@ -1,13 +1,27 @@
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
-import { ChevronRight, Zap, TrendingUp, Briefcase, Factory, ArrowRight, ChevronLeft, ShoppingBag } from "lucide-react";
+import { ChevronRight, Zap, Briefcase, Factory, ArrowRight, ChevronLeft, ShoppingBag } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import PremiumProductCard from "@/components/PremiumProductCard";
 import { getShopDestination } from "@/lib/shopNavigation";
 import { premiumBanners } from "@/data/premiumBanners";
-import FeatureShowcase from "@/components/FeatureShowcase";
 
-const BRANDS = ["Samsung", "Apple", "Nike", "Adidas", "Sony", "LG", "Huawei", "Tecno", "Zamtel", "Airtel", "MTN", "Unilever"];
+const BRANDS = [
+  ["Samsung", "samsung", "1428A0"],
+  ["Apple", "apple", "000000"],
+  ["Nike", "nike", "111111"],
+  ["Adidas", "adidas", "000000"],
+  ["Sony", "sony", "000000"],
+  ["LG", "lg", "A50034"],
+  ["Huawei", "huawei", "FF0000"],
+  ["Tecno", "tecno", "000000"],
+  ["Bosch", "bosch", "E20015"],
+  ["Philips", "philips", "0066A1"],
+  ["Unilever", "unilever", "1F36C7"],
+  ["Zamtel", "zamtel", "00A651"],
+  ["Airtel", "airtel", "E4002B"],
+  ["MTN", "mtn", "FFCC00"],
+] as const;
 
 const CATEGORY_ROWS = [
   { slug: "electronics", title: "Trending in Electronics" },
@@ -109,14 +123,20 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  const rowProducts = [electronics, fashion, beauty, home, groceries, babyKids, agro, auto];
-
   return (
     <div className="max-w-7xl mx-auto pb-8">
       <div className="bg-peza-brown overflow-hidden py-2 shadow-sm">
-        <div className="flex animate-ticker whitespace-nowrap w-max">
-          {[...BRANDS, ...BRANDS].map((brand, i) => (
-            <span key={`${brand}-${i}`} className="text-peza-gold text-xs font-semibold px-6">● {brand}</span>
+        <div className="flex animate-ticker whitespace-nowrap w-max items-center">
+          {[...BRANDS, ...BRANDS].map(([brand, slug, color], i) => (
+            <span key={`${brand}-${i}`} className="inline-flex items-center justify-center h-9 min-w-[120px] px-5 mx-1 rounded-lg bg-white/95 shadow-sm">
+              <img
+                src={`https://cdn.simpleicons.org/${slug}/${color}`}
+                alt={brand}
+                title={brand}
+                className="max-h-5 max-w-[88px] w-auto object-contain"
+                loading="lazy"
+              />
+            </span>
           ))}
         </div>
       </div>
@@ -139,22 +159,6 @@ export default function Home() {
           <ChevronRight className="w-4 h-4" />
         </button>
         <div className="absolute bottom-3 right-4 flex gap-2">{banners.map((_, i) => <span key={i} className={`h-2 rounded-full transition-all ${i === bannerIdx ? "w-6 bg-white" : "w-2 bg-white/45"}`} />)}</div>
-      </section>
-
-      <FeatureShowcase />
-
-      <section className="px-4 mt-5">
-        <div className="rounded-2xl border border-peza-cream-dark bg-white p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-peza-brown-light">World brands</p>
-            <button onClick={goToShop} className="text-peza-orange text-xs font-semibold">View all</button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {["Samsung", "Apple", "Nike", "Sony", "Bosch", "Dell", "HP", "Adidas", "Unilever", "Airtel", "MTN", "Zamtel"].map((brand) => (
-              <span key={brand} className="rounded-full border border-peza-cream-dark bg-peza-cream px-3 py-1.5 text-[11px] font-semibold text-peza-brown">{brand}</span>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section className="px-4 mt-6">
@@ -186,22 +190,17 @@ export default function Home() {
       </section>
 
       <AdBanner index={0} onShop={goToShop} />
-
       <ProductRail title={CATEGORY_ROWS[0].title} products={electronics} onViewAll={() => navigate("/shop?cat=electronics")} accent />
       <AdBanner index={1} onShop={() => navigate("/shop?cat=home")} />
-
       <ProductRail title={CATEGORY_ROWS[1].title} products={fashion} onViewAll={() => navigate("/shop?cat=fashion")} accent />
       <ProductRail title={CATEGORY_ROWS[2].title} products={beauty} onViewAll={() => navigate("/shop?cat=beauty")} />
       <AdBanner index={2} onShop={() => navigate("/shop?cat=fashion")} />
-
       <ProductRail title={CATEGORY_ROWS[3].title} products={home} onViewAll={() => navigate("/shop?cat=home")} />
       <ProductRail title={CATEGORY_ROWS[4].title} products={groceries} onViewAll={() => navigate("/shop?cat=groceries")} />
       <AdBanner index={3} onShop={() => navigate("/shop?cat=groceries")} />
-
       <ProductRail title={CATEGORY_ROWS[5].title} products={babyKids} onViewAll={() => navigate("/shop?cat=baby-kids")} />
       <ProductRail title={CATEGORY_ROWS[6].title} products={agro} onViewAll={() => navigate("/shop?cat=agro")} />
       <AdBanner index={4} onShop={() => navigate("/shop?cat=electronics")} />
-
       <ProductRail title={CATEGORY_ROWS[7].title} products={auto} onViewAll={() => navigate("/shop?cat=auto")} />
 
       <section className="px-4 mt-7">
