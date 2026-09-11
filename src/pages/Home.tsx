@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight, Baby, Car, ChevronLeft, ChevronRight, Leaf, Laptop, Flame,
-  ShoppingBag, ShoppingBasket, Shirt, Sofa, Sparkles, Smartphone, Target,
+  ArrowRight, ChevronLeft, ChevronRight, Flame, Target,
   Zap, Briefcase, Factory,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
@@ -30,17 +29,20 @@ const CATEGORY_ROWS = [
   { slug: "auto", title: "Auto & Accessories" },
 ] as const;
 
-const categoryIcon = (slug: string) => {
-  const cls = "w-6 h-6 text-peza-orange";
-  if (slug === "electronics") return <Smartphone className={cls} />;
-  if (slug === "fashion") return <Shirt className={cls} />;
-  if (slug === "beauty") return <Sparkles className={cls} />;
-  if (slug === "home") return <Sofa className={cls} />;
-  if (slug === "groceries") return <ShoppingBasket className={cls} />;
-  if (slug === "baby-kids") return <Baby className={cls} />;
-  if (slug === "agro") return <Leaf className={cls} />;
-  if (slug === "auto") return <Car className={cls} />;
-  return <Laptop className={cls} />;
+const FLUENT_3D = "https://cdn.jsdelivr.net/gh/shuding/fluentui-emoji-unicode/assets";
+
+const categoryIcon = (name: string, slug: string) => {
+  const normalized = name.toLowerCase();
+  let code = "1f4bb";
+  if (normalized.includes("phone")) code = "1f4f1";
+  else if (normalized.includes("fashion")) code = "1f455";
+  else if (normalized.includes("beauty")) code = "1f484";
+  else if (normalized.includes("home")) code = "1f6cb";
+  else if (normalized.includes("grocer")) code = "1f9fa";
+  else if (normalized.includes("baby")) code = "1f9f8";
+  else if (normalized.includes("auto") || slug === "auto") code = "1f697";
+  else if (normalized.includes("agri") || slug === "agro") code = "1f331";
+  return `${FLUENT_3D}/${code}_3d.png`;
 };
 
 function ProductRail({ title, products, onViewAll, icon }: { title: string; products: any[]; onViewAll: () => void; icon?: "flame" | "target" }) {
@@ -155,10 +157,17 @@ export default function Home() {
         <div className="flex gap-3 sm:gap-5 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
           {categoryList.slice(0, 9).map((cat) => (
             <button key={cat.id} onClick={() => navigate(`/shop?cat=${cat.slug}`)} className="flex flex-col items-center gap-1.5 flex-shrink-0 snap-start min-w-[72px] sm:min-w-[82px] active:scale-95 transition-transform">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
-                {cat.image ? <img src={cat.image} alt={cat.name} className="w-10 h-10 sm:w-11 sm:h-11 object-cover rounded-full" /> : categoryIcon(cat.slug)}
+              <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full bg-gradient-to-br from-slate-50 to-blue-50 border border-blue-100/80 shadow-[0_5px_18px_rgba(37,99,235,0.14)] flex items-center justify-center overflow-hidden relative">
+                <div className="absolute inset-1 rounded-full bg-white/50" />
+                <img
+                  src={categoryIcon(cat.name, cat.slug)}
+                  alt=""
+                  aria-hidden="true"
+                  className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-[0_4px_5px_rgba(15,23,42,0.16)]"
+                  loading="lazy"
+                />
               </div>
-              <span className="text-[10px] sm:text-xs leading-tight text-slate-700 font-medium text-center max-w-[88px]">{cat.name}</span>
+              <span className="text-[10px] sm:text-xs leading-tight text-slate-700 font-semibold text-center max-w-[88px]">{cat.name}</span>
             </button>
           ))}
         </div>
