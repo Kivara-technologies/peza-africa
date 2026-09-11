@@ -23,60 +23,105 @@ export default function Header() {
     }
   };
 
+  const iconButton = "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-all hover:bg-slate-100 hover:text-peza-brown active:scale-95 focus:outline-none focus:ring-2 focus:ring-peza-orange/30";
+
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-[0_4px_18px_rgba(15,23,42,0.08)]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-5 h-16 flex items-center gap-2.5 sm:gap-4">
-          <button aria-label="Open menu" onClick={() => setMenuOpen(!menuOpen)} className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-all">
-            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/90 bg-white/95 shadow-[0_2px_16px_rgba(15,23,42,0.07)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-3 sm:gap-4 sm:px-5">
+          <button
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+            className={iconButton}
+          >
+            {menuOpen ? <X className="h-5.5 w-5.5" /> : <Menu className="h-5.5 w-5.5" />}
           </button>
 
-          <div className="flex items-center gap-1.5 cursor-pointer flex-shrink-0" onClick={() => navigate("/")}>
-            <img src="/peza-icon.png" alt="PEZA" className="w-9 h-9 rounded-xl object-cover" />
-            <span className="text-[24px] leading-none font-extrabold tracking-tight hidden xs:block sm:block">
+          <button
+            aria-label="Go to PEZA home"
+            onClick={() => navigate("/")}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl px-0.5 focus:outline-none focus:ring-2 focus:ring-peza-orange/30"
+          >
+            <img src="/peza-icon.png" alt="PEZA" className="h-9 w-9 rounded-xl object-cover shadow-sm ring-1 ring-slate-200/80" />
+            <span className="hidden text-[24px] font-extrabold leading-none tracking-[-0.04em] xs:block sm:block">
               <span className="text-peza-orange">P</span><span className="text-peza-brown">E</span><span className="text-peza-brown">Z</span><span className="text-peza-orange">A</span>
             </span>
-          </div>
+          </button>
 
-          <div className="flex-1 min-w-0 max-w-2xl mx-auto">
+          <div className="mx-auto min-w-0 max-w-2xl flex-1">
             {searchOpen ? (
-              <div className="flex items-center gap-2 bg-slate-50 rounded-full px-3.5 sm:px-4 py-2.5 border border-slate-300 shadow-inner">
-                <Search className="w-5 h-5 text-slate-500 shrink-0" />
-                <input autoFocus type="text" placeholder={t("nav.search_placeholder")} className="bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 text-sm flex-1 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={handleSearch} onBlur={() => { if (!searchQuery) setSearchOpen(false); }} />
-                <button aria-label="Close search" onClick={() => { setSearchOpen(false); setSearchQuery(""); }}><X className="w-4 h-4 text-slate-400" /></button>
+              <div className="group flex h-11 items-center gap-2 rounded-full border border-peza-orange/50 bg-white px-3.5 shadow-[0_4px_16px_rgba(15,23,42,0.07)] ring-2 ring-peza-orange/10 sm:px-4">
+                <Search className="h-5 w-5 shrink-0 text-peza-orange" />
+                <input
+                  autoFocus
+                  type="search"
+                  enterKeyHint="search"
+                  placeholder={t("nav.search_placeholder")}
+                  aria-label="Search products, brands and more"
+                  className="w-full min-w-0 flex-1 border-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
+                />
+                <button
+                  aria-label="Close search"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                  className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             ) : (
-              <button aria-label="Search products" className="w-full flex items-center gap-2.5 bg-slate-50 rounded-full px-3.5 sm:px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-white cursor-text transition-all text-left" onClick={() => setSearchOpen(true)}>
-                <Search className="w-5 h-5 text-slate-500 shrink-0" />
-                <span className="text-slate-400 text-sm truncate">Search for products, brands and more...</span>
+              <button
+                aria-label="Search products"
+                className="flex h-11 w-full cursor-text items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/90 px-3.5 text-left transition-all hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-peza-orange/20 sm:px-4"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-5 w-5 shrink-0 text-slate-500" />
+                <span className="truncate text-sm text-slate-400">Search for products, brands and more...</span>
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <button aria-label="Wallet" className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors" onClick={() => navigate("/wallet")}><Wallet className="w-5 h-5" /></button>
-            <button aria-label="Notifications" className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative" onClick={() => navigate("/notifications")}>
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-peza-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>}
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+            <button aria-label="Wallet" className={`${iconButton} hidden sm:flex`} onClick={() => navigate("/wallet")}>
+              <Wallet className="h-5 w-5" />
             </button>
-            <button aria-label="Cart" className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 transition-colors relative" onClick={() => navigate("/cart")}>
-              <ShoppingCart className="w-6 h-6" />
-              {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-peza-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">{count}</span>}
+            <button aria-label="Notifications" className={`${iconButton} hidden sm:flex`} onClick={() => navigate("/notifications")}>
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-peza-orange px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+            <button aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`} className={iconButton} onClick={() => navigate("/cart")}>
+              <ShoppingCart className="h-5.5 w-5.5" />
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-peza-orange px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
             </button>
           </div>
         </div>
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm pt-20 px-4 md:hidden animate-fade-in-up" onClick={() => setMenuOpen(false)}>
-          <div className="rounded-3xl border border-white/10 bg-peza-brown p-4 shadow-2xl max-h-[calc(100vh-6rem)] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-40 bg-slate-950/60 px-4 pt-20 backdrop-blur-sm md:hidden animate-fade-in-up" onClick={() => setMenuOpen(false)}>
+          <div className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-3xl border border-white/10 bg-peza-brown p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between text-white">
-              <div className="flex items-center gap-2"><img src="/peza-icon.png" alt="PEZA" className="w-8 h-8 rounded-lg" /><span className="font-bold text-lg">Menu</span></div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-peza-gold/10 text-peza-gold px-2 py-1 text-[10px] font-bold uppercase tracking-wide"><Sparkles className="w-3 h-3" /> Top</span>
+              <div className="flex items-center gap-2"><img src="/peza-icon.png" alt="PEZA" className="h-8 w-8 rounded-lg" /><span className="text-lg font-bold">Menu</span></div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-peza-gold/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-peza-gold"><Sparkles className="h-3 w-3" /> Top</span>
             </div>
             <div className="flex flex-col gap-2">
               {[{ label: "Home", path: "/", icon: "🏠" },{ label: "Shop", path: "/shop", icon: "🏪" },{ label: "My Cart", path: "/cart", icon: "🛒" },{ label: "My Orders", path: "/orders", icon: "📦" },{ label: "My Wallet", path: "/wallet", icon: "💰" },{ label: "Messages", path: "/chat", icon: "💬" },{ label: "Find Work", path: "/jobs", icon: "💼" },{ label: "Suppliers Hub", path: "/suppliers", icon: "🏭" },{ label: "Market Prices", path: "/market-prices", icon: "📈" },{ label: "Shipping Calculator", path: "/shipping", icon: "🚢" },{ label: "My Profile", path: "/profile", icon: "👤" }].map((item) => (
-                <button key={item.path} className="flex items-center gap-4 py-3 px-3 rounded-xl border border-white/10 bg-white/5 text-left hover:bg-white/10 transition-colors" onClick={() => { navigate(item.path); setMenuOpen(false); }}><span className="text-xl">{item.icon}</span><span className="text-white font-medium text-lg">{item.label}</span></button>
+                <button key={item.path} className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-peza-gold/40" onClick={() => { navigate(item.path); setMenuOpen(false); }}>
+                  <span className="text-xl">{item.icon}</span><span className="text-lg font-medium text-white">{item.label}</span>
+                </button>
               ))}
             </div>
           </div>
