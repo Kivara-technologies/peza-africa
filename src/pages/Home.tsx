@@ -125,15 +125,15 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto pb-8">
-      <div className="bg-peza-brown overflow-hidden py-2 shadow-sm">
-        <div className="flex animate-ticker whitespace-nowrap w-max items-center">
+      <div className="border-y border-peza-cream-dark/70 bg-white overflow-hidden h-12 sm:h-14">
+        <div className="flex animate-ticker whitespace-nowrap w-max h-full items-center">
           {[...BRANDS, ...BRANDS].map(([brand, slug, color], i) => (
-            <span key={`${brand}-${i}`} className="inline-flex items-center justify-center h-9 min-w-[120px] px-5 mx-1 rounded-lg bg-white/95 shadow-sm">
+            <span key={`${brand}-${i}`} className="inline-flex items-center justify-center h-full min-w-[92px] sm:min-w-[108px] px-3 mx-0">
               <img
                 src={`https://cdn.simpleicons.org/${slug}/${color}`}
                 alt={brand}
                 title={brand}
-                className="max-h-5 max-w-[88px] w-auto object-contain"
+                className="max-h-6 sm:max-h-7 max-w-[78px] sm:max-w-[92px] w-auto object-contain"
                 loading="lazy"
               />
             </span>
